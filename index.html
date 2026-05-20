@@ -1458,68 +1458,89 @@ function render() { try { renderItemsForm(); renderBatches(); updateTotalsDispla
 //  PDF EXPORT
 // ══════════════════════════════════════════
 async function exportPDF() {
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile) {
-    // Mobile: open print dialog directly (user selects "Save as PDF")
-    exportPDFPrint();
-    return;
-  }
-  // Desktop: use html2canvas + jsPDF
-  const btn = document.querySelector('.btn-hdr-pdf');
-  const orig = btn?.textContent;
-  if(btn){ btn.textContent='⏳…'; btn.disabled=true; }
-  try {
-    const el = document.getElementById('quote-preview');
-    const canvas = await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
-    const imgData = canvas.toDataURL('image/png');
-    const {jsPDF} = window.jspdf;
-    const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const pW=pdf.internal.pageSize.getWidth(), pH=pdf.internal.pageSize.getHeight();
-    const ratio=Math.min(pW/(canvas.width/3.7795),pH/(canvas.height/3.7795));
-    pdf.addImage(imgData,'PNG',(pW-(canvas.width/3.7795)*ratio)/2,0,(canvas.width/3.7795)*ratio,(canvas.height/3.7795)*ratio);
-    const dn = docMode==='pi'?(v('piNum')||'PI'):docMode==='invoice'?((v('invNum')||'')+(v('invSuffix')||'')||'INV'):(v('quotNum')||'Q');
-    const pfx = docMode==='pi'?'PI':docMode==='invoice'?'Invoice':'Quotation';
-    pdf.save(`${pfx}_${dn}.pdf`);
-  } catch(e) { alert('PDF失敗: '+e.message); }
-  finally { if(btn){ btn.textContent=orig; btn.disabled=false; } }
+  exportPDFPrint();
 }
 
 function exportPDFPrint() {
-  // Get the current preview HTML
-  const previewHTML = document.getElementById('quote-preview').innerHTML;
-  // Collect all stylesheets
-  const styles = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
+  const previewEl = document.getElementById('quote-preview');
+  const paperEl = previewEl.querySelector('.pv-paper');
+  if (!paperEl) { showToast('請先填寫資料產生預覽', '#E67E22'); return; }
+
+  // Clone paper content cleanly
+  const paperClone = paperEl.cloneNode(true);
+  // Remove any inline transform/scale from mobile view
+  paperClone.style.transform = '';
+  paperClone.style.marginBottom = '';
+  paperClone.style.width = '794px';
+
+  // Collect only preview-related styles
+  const pvStyles = Array.from(document.querySelectorAll('style'))
+    .map(s => s.innerHTML)
+    .join('\n')
+    .replace(/@media\s*\(max-width[^}]+\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g, '') // strip mobile CSS
+    .replace(/\.workspace[^}]*\}/g, '')
+    .replace(/\.form-panel[^}]*\}/g, '')
+    .replace(/\.resizer[^}]*\}/g, '')
+    .replace(/\.header[^}]*\}/g, '');
+
+  const dn = docMode==='pi'?(v('piNum')||'PI'):docMode==='invoice'?((v('invNum')||'')+(v('invSuffix')||'')||'INV'):(v('quotNum')||'Q');
+  const pfx = docMode==='pi'?'Proforma Invoice':docMode==='invoice'?'Invoice':'Quotation';
+
   const printHTML = `<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<html><head>
+<meta charset="utf-8">
+<title>${pfx} ${dn}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: white; font-family: 'Times New Roman', Times, serif; }
-  .pv-paper { width: 794px; margin: 0 auto; padding: 32px 40px; background: white; }
-  ${styles}
+  ${pvStyles}
+  .pv-paper {
+    width: 794px !important;
+    margin: 0 auto;
+    padding: 32px 40px !important;
+    background: white !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
   @media print {
-    body { margin: 0; }
-    .pv-paper { width: 100%; padding: 10mm 12mm; box-shadow: none; margin: 0; }
-    @page { size: A4 portrait; margin: 0; }
+    html, body { width: 210mm; }
+    body { margin: 0; padding: 0; background: white !important; }
+    .pv-paper {
+      width: 210mm !important;
+      padding: 10mm 12mm !important;
+      margin: 0 !important;
+      background: white !important;
+    }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+      /* Hide browser-added URL and date/time */
+      margin-top: 0mm;
+      margin-bottom: 0mm;
+    }
   }
   @media screen {
-    body { background: #eee; padding: 20px; }
-    .pv-paper { box-shadow: 0 2px 16px rgba(0,0,0,0.15); }
+    body { background: white; padding: 0; }
+    .pv-paper { box-shadow: none; }
   }
 </style>
 </head><body>
-${previewHTML}
+${paperClone.outerHTML}
 <script>
   window.onload = function() {
-    setTimeout(function() { window.print(); }, 300);
+    setTimeout(function() { window.print(); }, 500);
   };
+  window.onafterprint = function() { window.close(); };
 <\/script>
+<div style="position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#1A5276;color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-family:sans-serif;z-index:999;pointer-events:none;opacity:0.9">
+  提示：列印設定中請關閉「頁首及頁尾」選項
+</div>
 </body></html>`;
 
   const win = window.open('', '_blank');
   if (!win) {
-    // Popup blocked — fallback: show instructions
-    showToast('請允許彈出視窗，或使用瀏覽器的「分享 → 列印」', '#E67E22');
+    showToast('請允許彈出視窗，再按一次 PDF 按鈕', '#E67E22');
     return;
   }
   win.document.write(printHTML);
