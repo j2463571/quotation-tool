@@ -194,16 +194,12 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     border-right: none;
     border-bottom: 1px solid var(--border);
     padding: 1rem;
-    display: none;
   }
-  .form-panel.mobile-active { display: flex; }
   .preview-panel {
     padding: 0.75rem;
     flex: unset;
     min-height: 60vh;
-    display: none;
   }
-  .preview-panel.mobile-active { display: flex; }
 
   /* Mobile tab bar */
   .mobile-tabs {
@@ -1687,16 +1683,12 @@ function exportRecordsPDF() {
     border-right: none;
     border-bottom: 1px solid var(--border);
     padding: 1rem;
-    display: none;
   }
-  .form-panel.mobile-active { display: flex; }
   .preview-panel {
     padding: 0.75rem;
     flex: unset;
     min-height: 60vh;
-    display: none;
   }
-  .preview-panel.mobile-active { display: flex; }
 
   /* Mobile tab bar */
   .mobile-tabs {
@@ -1828,16 +1820,12 @@ function exportPriceHistoryPDF() {
     border-right: none;
     border-bottom: 1px solid var(--border);
     padding: 1rem;
-    display: none;
   }
-  .form-panel.mobile-active { display: flex; }
   .preview-panel {
     padding: 0.75rem;
     flex: unset;
     min-height: 60vh;
-    display: none;
   }
-  .preview-panel.mobile-active { display: flex; }
 
   /* Mobile tab bar */
   .mobile-tabs {
@@ -1907,22 +1895,21 @@ function exportPriceHistoryPDF() {
 //  MOBILE TAB SWITCHING
 // ══════════════════════════════════════════
 function switchMobileTab(tab) {
-  const isMobile = window.innerWidth <= 768;
-  if (!isMobile) return;
-  const formPanel    = document.querySelector('.form-panel');
-  const previewPanel = document.querySelector('.preview-panel');
-  const tabForm      = document.getElementById('tabForm');
-  const tabPreview   = document.getElementById('tabPreview');
+  const fp = document.querySelector('.form-panel');
+  const pp = document.querySelector('.preview-panel');
+  const tabForm    = document.getElementById('tabForm');
+  const tabPreview = document.getElementById('tabPreview');
+  if (!fp || !pp) return;
   if (tab === 'form') {
-    formPanel.style.display = 'flex';
-    previewPanel.style.display = 'none';
-    tabForm.classList.add('active');
-    tabPreview.classList.remove('active');
+    fp.style.display = 'flex';
+    pp.style.display = 'none';
+    tabForm?.classList.add('active');
+    tabPreview?.classList.remove('active');
   } else {
-    previewPanel.style.display = 'flex';
-    formPanel.style.display = 'none';
-    tabPreview.classList.add('active');
-    tabForm.classList.remove('active');
+    pp.style.display = 'flex';
+    fp.style.display = 'none';
+    tabPreview?.classList.add('active');
+    tabForm?.classList.remove('active');
   }
 }
 
@@ -1931,15 +1918,15 @@ function initMobileLayout() {
   const pp = document.querySelector('.preview-panel');
   if (!fp || !pp) return;
   if (window.innerWidth <= 768) {
-    fp.classList.add('mobile-active');
-    pp.classList.remove('mobile-active');
-    fp.style.display = '';
-    pp.style.display = 'none';
-  } else {
-    fp.classList.remove('mobile-active');
-    pp.classList.remove('mobile-active');
+    // Mobile: show form, hide preview
     fp.style.display = 'flex';
-    pp.style.display = 'flex';
+    pp.style.display = 'none';
+    document.getElementById('tabForm')?.classList.add('active');
+    document.getElementById('tabPreview')?.classList.remove('active');
+  } else {
+    // Desktop: clear inline styles, let CSS flex layout handle it
+    fp.style.display = '';
+    pp.style.display = '';
   }
 }
 window.addEventListener('resize', initMobileLayout);
