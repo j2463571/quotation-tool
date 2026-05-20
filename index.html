@@ -1459,54 +1459,52 @@ async function exportPDF() {
   if (btn) { btn.innerHTML = '⏳…'; btn.disabled = true; }
   try {
     const el = document.getElementById('quote-preview');
-    // Temporarily remove transform/scale for accurate capture
-    const origTransform = el.style.transform;
-    const origWidth = el.style.width;
-    el.style.transform = '';
-    el.style.width = '794px';
+
+    // Temporarily hide logo (too large for html2canvas)
+    const logo = el.querySelector('.pv-logo-img');
+    const logoSrc = logo?.src || '';
+    if (logo) logo.style.visibility = 'hidden';
 
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
-      width: 794,
-      windowWidth: 794
+      windowWidth: 900
     });
 
-    el.style.transform = origTransform;
-    el.style.width = origWidth;
+    if (logo) logo.style.visibility = '';
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();   // 210mm
-    const pageH = pdf.internal.pageSize.getHeight();  // 297mm
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const ratio = canvas.width / pageW;
+    const imgH = canvas.height / ratio;
 
-    // Convert canvas to image and fit to A4 width, split into pages if needed
-    const imgW = pageW;
-    const imgH = (canvas.height / canvas.width) * imgW;
+    // Add logo manually if available
+    if (logoSrc && logoSrc.startsWith('data:')) {
+      // logo position approx: x=0, y=0, w=29mm, h=22mm
+      try { pdf.addImage(logoSrc, 'PNG', 1, 1, 29, 22); } catch(e) { /* skip if logo fails */ }
+    }
 
     if (imgH <= pageH) {
-      // Single page
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, imgH);
     } else {
-      // Multi-page: slice canvas into A4-sized chunks
-      const scale = canvas.width / imgW; // px per mm
-      const sliceH = pageH * scale;      // canvas px per page
-      let yOffset = 0;
-      while (yOffset < canvas.height) {
-        const remaining = canvas.height - yOffset;
-        const thisSlice = Math.min(sliceH, remaining);
-        // Create a temporary canvas for this slice
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = thisSlice;
-        const ctx = sliceCanvas.getContext('2d');
-        ctx.drawImage(canvas, 0, -yOffset);
-        const sliceImgH = (thisSlice / canvas.width) * imgW;
-        if (yOffset > 0) pdf.addPage();
-        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, sliceImgH);
-        yOffset += sliceH;
+      const pageHpx = pageH * ratio;
+      let yPx = 0;
+      while (yPx < canvas.height) {
+        const sliceH = Math.min(pageHpx, canvas.height - yPx);
+        const sc = document.createElement('canvas');
+        sc.width = canvas.width; sc.height = Math.ceil(sliceH);
+        sc.getContext('2d').drawImage(canvas, 0, -yPx);
+        if (yPx > 0) pdf.addPage();
+        pdf.addImage(sc.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / ratio);
+        if (yPx === 0 && logoSrc && logoSrc.startsWith('data:')) {
+          try { pdf.addImage(logoSrc, 'PNG', 1, 1, 29, 22); } catch(e) {}
+        }
+        yPx += pageHpx;
       }
     }
 
