@@ -1454,7 +1454,72 @@ function render() { try { renderItemsForm(); renderBatches(); updateTotalsDispla
 //  PDF EXPORT
 // ══════════════════════════════════════════
 async function exportPDF() {
-  exportPDFPrint();
+  const btn = document.querySelector('.btn-hdr-pdf');
+  const orig = btn?.innerHTML;
+  if (btn) { btn.innerHTML = '⏳…'; btn.disabled = true; }
+  try {
+    const el = document.getElementById('quote-preview');
+    // Temporarily remove transform/scale for accurate capture
+    const origTransform = el.style.transform;
+    const origWidth = el.style.width;
+    el.style.transform = '';
+    el.style.width = '794px';
+
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: 794,
+      windowWidth: 794
+    });
+
+    el.style.transform = origTransform;
+    el.style.width = origWidth;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();   // 210mm
+    const pageH = pdf.internal.pageSize.getHeight();  // 297mm
+
+    // Convert canvas to image and fit to A4 width, split into pages if needed
+    const imgW = pageW;
+    const imgH = (canvas.height / canvas.width) * imgW;
+
+    if (imgH <= pageH) {
+      // Single page
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH);
+    } else {
+      // Multi-page: slice canvas into A4-sized chunks
+      const scale = canvas.width / imgW; // px per mm
+      const sliceH = pageH * scale;      // canvas px per page
+      let yOffset = 0;
+      while (yOffset < canvas.height) {
+        const remaining = canvas.height - yOffset;
+        const thisSlice = Math.min(sliceH, remaining);
+        // Create a temporary canvas for this slice
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = thisSlice;
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, -yOffset);
+        const sliceImgH = (thisSlice / canvas.width) * imgW;
+        if (yOffset > 0) pdf.addPage();
+        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, sliceImgH);
+        yOffset += sliceH;
+      }
+    }
+
+    const dn = docMode==='pi'?(v('piNum')||'PI'):docMode==='invoice'?((v('invNum')||'')+(v('invSuffix')||'')||'INV'):(v('quotNum')||'Q');
+    const pfx = docMode==='pi'?'PI':docMode==='invoice'?'Invoice':'Quotation';
+    pdf.save(`${pfx}_${dn}.pdf`);
+    showToast('✓ PDF 已下載', '#27AE60');
+  } catch(e) {
+    showToast('❌ PDF 失敗: ' + e.message, '#E74C3C');
+    console.error(e);
+  } finally {
+    if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+  }
 }
 
 function exportPDFPrint() {
