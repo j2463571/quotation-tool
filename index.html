@@ -248,6 +248,18 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   .item-card { padding: 8px 10px 6px; }
 }
 
+
+/* ── Inv# Dropdown ── */
+.inv-dropdown-wrap{position:relative;display:inline-block}
+.inv-dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:420px;max-height:420px;overflow-y:auto;z-index:500;font-family:'Noto Sans TC',sans-serif}
+.inv-dropdown-menu.open{display:block}
+.inv-dd-header{padding:8px 14px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border-light);background:var(--bg)}
+.inv-dd-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .1s;font-size:12px}
+.inv-dd-row:hover{background:var(--accent-light)}
+.inv-dd-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#1E8449;min-width:110px;flex-shrink:0}
+.inv-dd-buyer{font-weight:500;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-dd-items{font-size:10.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.inv-dd-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
 /* Hide mobile tabs on desktop */
 .mobile-tabs { display: none; }
 </style>
@@ -269,6 +281,13 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     <button class="btn-hdr btn-hdr-save" onclick="saveRecord()">&#128190; 儲存</button>
     <button class="btn-hdr btn-hdr-rec"  onclick="openRecords()">&#128203; 紀錄</button>
     <button class="btn-hdr" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="openPriceHistory()">&#128200; 歷史價格</button>
+    <div class="inv-dropdown-wrap" id="invDropdownWrap">
+      <button class="btn-hdr" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="toggleInvDropdown()" id="invDropdownBtn">&#128196; Inv #</button>
+      <div class="inv-dropdown-menu" id="invDropdownMenu">
+        <div class="inv-dd-header">已開立發票 Invoice Records</div>
+        <div id="invDropdownList"></div>
+      </div>
+    </div>
     <button class="btn-hdr btn-hdr-pdf"  onclick="exportPDF()">&#11015; PDF</button>
     <button class="btn-hdr" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="testConnection()">&#128268; 測試連線</button>
   </div>
@@ -1858,6 +1877,18 @@ function exportRecordsPDF() {
   .item-card { padding: 8px 10px 6px; }
 }
 
+
+/* ── Inv# Dropdown ── */
+.inv-dropdown-wrap{position:relative;display:inline-block}
+.inv-dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:420px;max-height:420px;overflow-y:auto;z-index:500;font-family:'Noto Sans TC',sans-serif}
+.inv-dropdown-menu.open{display:block}
+.inv-dd-header{padding:8px 14px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border-light);background:var(--bg)}
+.inv-dd-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .1s;font-size:12px}
+.inv-dd-row:hover{background:var(--accent-light)}
+.inv-dd-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#1E8449;min-width:110px;flex-shrink:0}
+.inv-dd-buyer{font-weight:500;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-dd-items{font-size:10.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.inv-dd-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
 /* Hide mobile tabs on desktop */
 .mobile-tabs { display: none; }
 </sty'+'le></head><body>
@@ -1995,6 +2026,18 @@ function exportPriceHistoryPDF() {
   .item-card { padding: 8px 10px 6px; }
 }
 
+
+/* ── Inv# Dropdown ── */
+.inv-dropdown-wrap{position:relative;display:inline-block}
+.inv-dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:420px;max-height:420px;overflow-y:auto;z-index:500;font-family:'Noto Sans TC',sans-serif}
+.inv-dropdown-menu.open{display:block}
+.inv-dd-header{padding:8px 14px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border-light);background:var(--bg)}
+.inv-dd-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .1s;font-size:12px}
+.inv-dd-row:hover{background:var(--accent-light)}
+.inv-dd-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#1E8449;min-width:110px;flex-shrink:0}
+.inv-dd-buyer{font-weight:500;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-dd-items{font-size:10.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.inv-dd-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
 /* Hide mobile tabs on desktop */
 .mobile-tabs { display: none; }
 </sty'+'le></head><body>
@@ -2051,6 +2094,62 @@ function initMobileLayout() {
   }
 }
 window.addEventListener('resize', initMobileLayout);
+
+// ══════════════════════════════════════════
+//  INV# DROPDOWN
+// ══════════════════════════════════════════
+function toggleInvDropdown() {
+  const menu = document.getElementById('invDropdownMenu');
+  const isOpen = menu.classList.contains('open');
+  if (!isOpen) {
+    renderInvDropdown();
+    menu.classList.add('open');
+    // Close on outside click
+    setTimeout(() => document.addEventListener('click', closeInvDropdownOutside, {once:true}), 10);
+  } else {
+    menu.classList.remove('open');
+  }
+}
+function closeInvDropdownOutside(e) {
+  const wrap = document.getElementById('invDropdownWrap');
+  if (!wrap.contains(e.target)) {
+    document.getElementById('invDropdownMenu').classList.remove('open');
+  }
+}
+function renderInvDropdown() {
+  const list = document.getElementById('invDropdownList');
+  // Get all invoice records, sorted by invDate desc
+  const invRecs = quoteRecords
+    .filter(r => r.docMode === 'invoice')
+    .sort((a,b) => {
+      const da = a.invDate || a.quotDate || '';
+      const db = b.invDate || b.quotDate || '';
+      return db.localeCompare(da);
+    });
+  if (!invRecs.length) {
+    list.innerHTML = '<div class="inv-dd-empty">尚無 Invoice 紀錄</div>';
+    return;
+  }
+  list.innerHTML = invRecs.map(r => {
+    const num = (r.invNum||'') + (r.invSuffix||'') || '—';
+    const buyer = r.buyer || '—';
+    const itemStr = (r.items||[]).map(it=>it.item).join(', ');
+    const date = (r.invDate||r.quotDate||'').replace(/-/g,'/');
+    const jsr = JSON.stringify(r).replace(/"/g,'&quot;');
+    return `<div class="inv-dd-row" onclick="loadInvFromDropdown(${jsr})">
+      <span class="inv-dd-num">${escHtml(num)}</span>
+      <span class="inv-dd-buyer" title="${escHtml(buyer)}">${escHtml(buyer)}</span>
+      <span class="inv-dd-items" title="${escHtml(itemStr)}">${escHtml(itemStr)}</span>
+      <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;margin-left:auto">${date}</span>
+    </div>`;
+  }).join('');
+}
+function loadInvFromDropdown(rec) {
+  document.getElementById('invDropdownMenu').classList.remove('open');
+  setDocMode('invoice');
+  loadRecordIntoForm(rec);
+  closeRecords();
+}
 
 // ══════════════════════════════════════════
 //  INIT
