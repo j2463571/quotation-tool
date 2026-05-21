@@ -265,6 +265,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   </div>
   <div class="header-btns">
     <span class="sync-dot" id="syncDot" title="雲端狀態"></span>
+    <button class="btn-hdr" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.5)" onclick="newDocument()">&#43; 新檔案</button>
     <button class="btn-hdr btn-hdr-save" onclick="saveRecord()">&#128190; 儲存</button>
     <button class="btn-hdr btn-hdr-rec"  onclick="openRecords()">&#128203; 紀錄</button>
     <button class="btn-hdr" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="openPriceHistory()">&#128200; 歷史價格</button>
@@ -1274,6 +1275,42 @@ function deleteRecordGroup(ids) {
   ids.forEach(id => gasCall('deleteRecord',{id}).catch(()=>{}));
   showToast('✓ 已刪除', '#27AE60');
 }
+function newDocument() {
+  if (!confirm('清除所有內容，建立新檔案？')) return;
+  // Reset doc mode
+  setDocMode('quotation');
+  // Clear all form fields
+  const clear = id => { const e = document.getElementById(id); if(e) e.value = ''; };
+  clear('quotNum'); clear('quotDate'); clear('piNum'); clear('piDate');
+  clear('poNum'); clear('invNum'); clear('invDate'); clear('invPoNum');
+  clear('invRefPi'); clear('invDepositAmt'); clear('invDepositPct');
+  clear('buyerName'); clear('buyerAddr'); clear('buyerPhone'); clear('buyerEmail');
+  clear('incoLocation'); clear('otherRemarks'); clear('remarkOrigin');
+  clear('validDate'); clear('taxRate');
+  clear('director');
+  // Reset selects to defaults
+  const sel = (id, val) => { const e = document.getElementById(id); if(e) e.value = val; };
+  sel('incoTermSel','DAP'); sel('paymentSel','100% before shipment');
+  sel('currencySel','EUR'); sel('deliveryMode','date');
+  sel('invDepositType','none'); sel('invSuffix','');
+  document.getElementById('incoTermCustom').style.display = 'none';
+  document.getElementById('paymentCustom').style.display = 'none';
+  document.getElementById('currencyCustom').style.display = 'none';
+  document.getElementById('validDateSkip').checked = false;
+  // Set today's date
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('quotDate').value = today;
+  // Clear items and batches
+  items = [];
+  batches = [];
+  // Re-render
+  onDeliveryModeChange();
+  onDepositTypeChange();
+  renderBatches();
+  render();
+  showToast('✓ 新檔案已建立', '#27AE60');
+}
+
 function saveRecord() {
   const {subtotal,tax,total} = calcTotals();
   const {code:curCode} = getCurrency();
