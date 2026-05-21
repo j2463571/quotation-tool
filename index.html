@@ -1140,10 +1140,10 @@ function renderRecords() {
   const SYMS   = {EUR:'€',USD:'$',TWD:'NT$',CNY:'¥',GBP:'£'};
   const sym    = r => SYMS[r.currency]||r.currency||'';
   const fmtD   = s => s?(s+'').replace(/-/g,'/'):' ';
-  const MC     = {quotation:'#1A5276',pi:'#7D3C98',invoice:'#1E8449'};
-  const ML     = {quotation:'Q',pi:'PI',invoice:'INV'};
   const recFrom = document.getElementById('recDateFrom')?.value || '';
   const recTo   = document.getElementById('recDateTo')?.value   || '';
+
+  // Filter
   let recs = quoteRecords.filter(r => {
     const dm = r.docMode||'quotation';
     const dd = dm==='pi'?(r.piDate||r.quotDate||''):dm==='invoice'?(r.invDate||r.quotDate||''):(r.quotDate||'');
@@ -1153,41 +1153,99 @@ function renderRecords() {
     const hay = [r.quotNum,r.piNum,r.invNum,r.buyer,...(r.items||[]).map(it=>it.item)].join(' ').toLowerCase();
     return hay.includes(search);
   });
-  recs.sort((a,b) => {
-    if(sort==='date_desc') return b.id-a.id;
-    if(sort==='date_asc')  return a.id-b.id;
-    if(sort==='buyer_asc') return (a.buyer||'').localeCompare(b.buyer||'');
-    if(sort==='total_desc')return b.total-a.total;
-    return 0;
+
+  // Group by quotNum (root key)
+  const groups = {};
+  recs.forEach(r => {
+    const key = r.quotNum || ('_'+r.id);
+    if (!groups[key]) groups[key] = {quotNum:r.quotNum||'', recs:[], latestId:0};
+    groups[key].recs.push(r);
+    if (r.id > groups[key].latestId) groups[key].latestId = r.id;
   });
+
+  // Sort groups by latest record id
+  let groupArr = Object.values(groups);
+  groupArr.sort((a,b) => {
+    if(sort==='date_desc') return b.latestId - a.latestId;
+    if(sort==='date_asc')  return a.latestId - b.latestId;
+    if(sort==='buyer_asc') {
+      const ab = a.recs[0]?.buyer||'', bb = b.recs[0]?.buyer||'';
+      return ab.localeCompare(bb);
+    }
+    if(sort==='total_desc') {
+      const at = Math.max(...a.recs.map(r=>r.total||0));
+      const bt = Math.max(...b.recs.map(r=>r.total||0));
+      return bt - at;
+    }
+    return b.latestId - a.latestId;
+  });
+
   const cnt = document.getElementById('recCount');
-  if(cnt) cnt.textContent = `共 ${recs.length} 筆`;
+  if(cnt) cnt.textContent = `共 ${groupArr.length} 筆`;
   const tbody = document.getElementById('recTableBody');
-  if (!recs.length) { tbody.innerHTML='<tr><td colspan="7" class="rec-empty">尚無紀錄。按「儲存」新增。</td></tr>'; return; }
-  tbody.innerHTML = recs.map(r => {
-    const dm = r.docMode||'quotation';
-    const dn = dm==='pi'?(r.piNum||''):dm==='invoice'?(r.invNum||''):(r.quotNum||'');
-    const dd = dm==='pi'?(r.piDate||r.quotDate||''):dm==='invoice'?(r.invDate||r.quotDate||''):(r.quotDate||'');
-    const badge = `<span style="background:${MC[dm]||'#999'};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:3px">${ML[dm]||'Q'}</span>`;
-    const itags = (r.items||[]).map(it=>`<span class="rec-tag">${escHtml(it.item)}</span>`).join('');
-    const jsr = JSON.stringify(r).replace(/"/g,'&quot;');
-    const btnStyle = (bg) => `style="background:${bg};color:#fff;border:none;border-radius:3px;padding:3px 8px;font-size:10.5px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif"`;
+  if (!groupArr.length) { tbody.innerHTML='<tr><td colspan="7" class="rec-empty">尚無紀錄。按「儲存」新增。</td></tr>'; return; }
+
+  const btnStyle = (bg) => `style="background:${bg};color:#fff;border:none;border-radius:3px;padding:3px 8px;font-size:10.5px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif"`;
+  const MC = {quotation:'#1A5276',pi:'#7D3C98',invoice:'#1E8449'};
+  const ML = {quotation:'Q',pi:'PI',invoice:'INV'};
+
+  tbody.innerHTML = groupArr.map(g => {
+    const allRecs = g.recs;
+    // Find Q, PI, INV within group
+    const qRec   = allRecs.find(r => (r.docMode||'quotation')==='quotation');
+    const piRec  = allRecs.find(r => r.docMode==='pi');
+    const invRec = allRecs.find(r => r.docMode==='invoice');
+    // Use Q as primary for display, fallback to earliest
+    const primary = qRec || piRec || invRec || allRecs[0];
+    const dd = primary.quotDate || primary.piDate || primary.invDate || '';
+    const itags = (primary.items||[]).map(it=>`<span class="rec-tag">${escHtml(it.item)}</span>`).join('');
+    const latestRec = allRecs.reduce((a,b) => b.id > a.id ? b : a);
+    const latestTotal = latestRec.total || 0;
+    const currency = latestRec.currency || primary.currency || '';
+
+    // Document number badges
+    const numBadges = allRecs.map(r => {
+      const dm = r.docMode||'quotation';
+      const dn = dm==='pi'?(r.piNum||'PI'):dm==='invoice'?((r.invNum||'')+(r.invSuffix||'')):(r.quotNum||'Q');
+      return `<span style="background:${MC[dm]};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:2px">${ML[dm]}</span><span style="font-family:'DM Mono',monospace;font-size:10px;margin-right:6px">${escHtml(dn)}</span>`;
+    }).join('');
+
+    // Action buttons: load each existing doc, plus extend buttons for missing ones
+    const jsPrimary = JSON.stringify(primary).replace(/"/g,'&quot;');
+    const jsLatest  = JSON.stringify(latestRec).replace(/"/g,'&quot;');
+    const jsQ   = qRec   ? JSON.stringify(qRec).replace(/"/g,'&quot;')   : null;
+    const jsPI  = piRec  ? JSON.stringify(piRec).replace(/"/g,'&quot;')  : null;
+    const jsINV = invRec ? JSON.stringify(invRec).replace(/"/g,'&quot;') : null;
+
+    // Load buttons for existing docs
+    let actionBtns = '';
+    if (jsQ)   actionBtns += `<button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');initMobileLayout();loadRecordIntoForm(${jsQ})">Q</button>`;
+    if (jsPI)  actionBtns += `<button ${btnStyle('#7D3C98')} onclick="setDocMode('pi');loadRecordIntoForm(${jsPI})">PI</button>`;
+    if (jsINV) actionBtns += `<button ${btnStyle('#1E8449')} onclick="setDocMode('invoice');loadRecordIntoForm(${jsINV})">INV</button>`;
+    // Extend buttons for missing docs
+    if (!jsPI)  actionBtns += `<button ${btnStyle('#9B59B6')} onclick="setDocMode('pi');loadRecordIntoForm(${jsLatest})" title="從現有紀錄建立 PI">→PI</button>`;
+    if (!jsINV) actionBtns += `<button ${btnStyle('#27AE60')} onclick="setDocMode('invoice');loadRecordIntoForm(${jsLatest})" title="從現有紀錄建立 INV">→Inv</button>`;
+    // Delete all in group
+    const delIds = allRecs.map(r=>r.id).join(',');
+    actionBtns += `<button class="btn-rec-del" onclick="deleteRecordGroup([${delIds}])" title="刪除此訂單所有紀錄">🗑</button>`;
+
     return `<tr>
       <td style="white-space:nowrap;color:var(--text-muted)">${fmtD(dd)}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:10.5px">${badge}${escHtml(dn)}</td>
-      <td style="font-weight:500">${escHtml(r.buyer||'')}</td>
+      <td style="font-size:10.5px">${numBadges}</td>
+      <td style="font-weight:500">${escHtml(primary.buyer||'')}</td>
       <td>${itags}</td>
-      <td style="color:var(--text-muted)">${escHtml(r.currency||'')}</td>
-      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600">${sym(r)}${fmtMoney(r.total||0)}</td>
-      <td style="display:flex;gap:3px;align-items:center;flex-wrap:wrap">
-        <button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');
-initMobileLayout();loadRecordIntoForm(${jsr})">調出</button>
-        <button ${btnStyle('#7D3C98')} onclick="setDocMode('pi');loadRecordIntoForm(${jsr})">→PI</button>
-        <button ${btnStyle('#1E8449')} onclick="setDocMode('invoice');loadRecordIntoForm(${jsr})">→Inv</button>
-        <button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除">🗑</button>
-      </td>
+      <td style="color:var(--text-muted)">${escHtml(currency)}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600">${(SYMS[currency]||currency)}${fmtMoney(latestTotal)}</td>
+      <td style="display:flex;gap:3px;align-items:center;flex-wrap:wrap">${actionBtns}</td>
     </tr>`;
   }).join('');
+}
+
+function deleteRecordGroup(ids) {
+  quoteRecords = quoteRecords.filter(r => !ids.includes(r.id));
+  renderRecords();
+  ids.forEach(id => gasCall('deleteRecord',{id}).catch(()=>{}));
+  showToast('✓ 已刪除', '#27AE60');
 }
 function saveRecord() {
   const {subtotal,tax,total} = calcTotals();
