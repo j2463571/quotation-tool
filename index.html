@@ -1214,7 +1214,6 @@ function renderRecords() {
 
     // Action buttons built below
     const jsPrimary = JSON.stringify(primary).replace(/"/g,'&quot;');
-    const latestRec = allRecs.reduce((a,b) => b.id > a.id ? b : a);
 
     // Load buttons for existing docs + individual delete
     let actionBtns = '';
