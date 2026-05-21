@@ -1191,10 +1191,12 @@ function renderRecords() {
 
   tbody.innerHTML = groupArr.map(g => {
     const allRecs = g.recs;
-    // Find Q, PI, INV within group
-    const qRec   = allRecs.find(r => (r.docMode||'quotation')==='quotation');
-    const piRec  = allRecs.find(r => r.docMode==='pi');
-    const invRec = allRecs.find(r => r.docMode==='invoice');
+    // Find Q, ALL PIs, ALL INVs within group
+    const qRec    = allRecs.find(r => (r.docMode||'quotation')==='quotation');
+    const piRecs  = allRecs.filter(r => r.docMode==='pi');
+    const invRecs = allRecs.filter(r => r.docMode==='invoice');
+    const piRec   = piRecs[0] || null;
+    const invRec  = invRecs[0] || null;
     // Use Q as primary for display, fallback to earliest
     const primary = qRec || piRec || invRec || allRecs[0];
     const dd = primary.quotDate || primary.piDate || primary.invDate || '';
@@ -1210,21 +1212,33 @@ function renderRecords() {
       return `<span style="background:${MC[dm]};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:2px">${ML[dm]}</span><span style="font-family:'DM Mono',monospace;font-size:10px;margin-right:6px">${escHtml(dn)}</span>`;
     }).join('');
 
-    // Action buttons: load each existing doc, plus extend buttons for missing ones
+    // Action buttons built below
     const jsPrimary = JSON.stringify(primary).replace(/"/g,'&quot;');
-    const jsLatest  = JSON.stringify(latestRec).replace(/"/g,'&quot;');
-    const jsQ   = qRec   ? JSON.stringify(qRec).replace(/"/g,'&quot;')   : null;
-    const jsPI  = piRec  ? JSON.stringify(piRec).replace(/"/g,'&quot;')  : null;
-    const jsINV = invRec ? JSON.stringify(invRec).replace(/"/g,'&quot;') : null;
+    const latestRec = allRecs.reduce((a,b) => b.id > a.id ? b : a);
 
     // Load buttons for existing docs + individual delete
     let actionBtns = '';
-    if (jsQ)   actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');initMobileLayout();loadRecordIntoForm(${jsQ})">Q</button><button class="btn-rec-del" onclick="deleteRecord(${qRec.id})" title="刪除 Quotation" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
-    if (jsPI)  actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#7D3C98')} onclick="setDocMode('pi');loadRecordIntoForm(${jsPI})">PI</button><button class="btn-rec-del" onclick="deleteRecord(${piRec.id})" title="刪除 PI" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
-    if (jsINV) actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1E8449')} onclick="setDocMode('invoice');loadRecordIntoForm(${jsINV})">INV</button><button class="btn-rec-del" onclick="deleteRecord(${invRec.id})" title="刪除 Invoice" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    // Q
+    if (qRec) {
+      const jsQ = JSON.stringify(qRec).replace(/"/g,'&quot;');
+      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');initMobileLayout();loadRecordIntoForm(${jsQ})">Q</button><button class="btn-rec-del" onclick="deleteRecord(${qRec.id})" title="刪除 Quotation" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    }
+    // All PIs
+    piRecs.forEach((r,i) => {
+      const js = JSON.stringify(r).replace(/"/g,'&quot;');
+      const label = piRecs.length > 1 ? `PI${i+1}` : 'PI';
+      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#7D3C98')} onclick="setDocMode('pi');loadRecordIntoForm(${js})">${label}</button><button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除 ${label}" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    });
+    // All INVs
+    invRecs.forEach((r,i) => {
+      const js = JSON.stringify(r).replace(/"/g,'&quot;');
+      const label = invRecs.length > 1 ? `INV${i+1}` : 'INV';
+      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1E8449')} onclick="setDocMode('invoice');loadRecordIntoForm(${js})">${label}</button><button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除 ${label}" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    });
     // Extend buttons for missing docs
-    if (!jsPI)  actionBtns += `<button ${btnStyle('#9B59B6')} onclick="setDocMode('pi');loadRecordIntoForm(${jsLatest})" title="從現有紀錄建立 PI">→PI</button>`;
-    if (!jsINV) actionBtns += `<button ${btnStyle('#27AE60')} onclick="setDocMode('invoice');loadRecordIntoForm(${jsLatest})" title="從現有紀錄建立 INV">→Inv</button>`;
+    const jsLatest = JSON.stringify(latestRec).replace(/"/g,'&quot;');
+    if (!piRec)  actionBtns += `<button ${btnStyle('#9B59B6')} onclick="setDocMode('pi');loadRecordIntoForm(${jsLatest})" title="從現有紀錄建立 PI">→PI</button>`;
+    if (!invRec) actionBtns += `<button ${btnStyle('#27AE60')} onclick="setDocMode('invoice');loadRecordIntoForm(${jsLatest})" title="從現有紀錄建立 INV">→Inv</button>`;
     // Delete entire group
     const delIds = allRecs.map(r=>r.id).join(',');
     actionBtns += `<button class="btn-rec-del" onclick="deleteRecordGroup([${delIds}])" title="刪除此訂單全部紀錄" style="margin-left:2px">🗑全</button>`;
