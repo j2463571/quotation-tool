@@ -1157,7 +1157,21 @@ function renderRecords() {
   // Group by quotNum (root key)
   const groups = {};
   recs.forEach(r => {
-    const key = r.quotNum || ('_'+r.id);
+    // Group key: use quotNum if exists, otherwise use piNum or invNum or unique id
+    // This ensures unrelated PI/INV records don't get merged with old quotations
+    let key;
+    const dm = r.docMode || 'quotation';
+    if (dm === 'quotation') {
+      key = r.quotNum ? ('Q_' + r.quotNum) : ('_' + r.id);
+    } else if (dm === 'pi') {
+      // Link to quotation if quotNum is set AND matches an existing quotation
+      key = r.quotNum ? ('Q_' + r.quotNum) : (r.piNum ? ('PI_' + r.piNum) : ('_' + r.id));
+    } else if (dm === 'invoice') {
+      // Link by quotNum or refPI
+      key = r.quotNum ? ('Q_' + r.quotNum) : (r.invRefPi ? ('PI_' + r.invRefPi) : (r.invNum ? ('INV_' + r.invNum) : ('_' + r.id)));
+    } else {
+      key = '_' + r.id;
+    }
     if (!groups[key]) groups[key] = {quotNum:r.quotNum||'', recs:[], latestId:0};
     groups[key].recs.push(r);
     if (r.id > groups[key].latestId) groups[key].latestId = r.id;
