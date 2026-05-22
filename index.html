@@ -1689,10 +1689,23 @@ function renderPriceHistory() {
 
   const phFrom = document.getElementById('phDateFrom')?.value || '';
   const phTo   = document.getElementById('phDateTo')?.value   || '';
-  // Flatten all items from all records that match the search and date range
-  const rows = [];
+
+  // Group records by quotNum (same logic as renderRecords)
+  // For each group, use only the latest record (highest id)
+  const groupMap = {};
   quoteRecords.forEach(r => {
-    const rDate = r.quotDate || r.savedAt?.slice(0,10) || '';
+    const dm = r.docMode || 'quotation';
+    let gKey;
+    if (dm === 'quotation') gKey = r.quotNum ? ('Q_'+r.quotNum) : ('_'+r.id);
+    else if (dm === 'pi')   gKey = r.quotNum ? ('Q_'+r.quotNum) : (r.piNum ? ('PI_'+r.piNum) : ('_'+r.id));
+    else                    gKey = r.quotNum ? ('Q_'+r.quotNum) : (r.invRefPi ? ('PI_'+r.invRefPi) : (r.invNum ? ('INV_'+r.invNum) : ('_'+r.id)));
+    if (!groupMap[gKey] || r.id > groupMap[gKey].id) groupMap[gKey] = r;
+  });
+
+  // Flatten items from deduplicated records
+  const rows = [];
+  Object.values(groupMap).forEach(r => {
+    const rDate = r.quotDate || r.piDate || r.invDate || r.savedAt?.slice(0,10) || '';
     if (phFrom && rDate && rDate < phFrom) return;
     if (phTo   && rDate && rDate > phTo)   return;
     (r.items||[]).forEach(it => {
