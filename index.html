@@ -262,17 +262,38 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 .inv-dd-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
 /* Hide mobile tabs on desktop */
 .mobile-tabs { display: none; }
+/* Packing Slip Preview */
+.ps-lh{display:flex;align-items:stretch;gap:18px;margin-bottom:16px}
+.ps-logo{width:100px;height:auto;object-fit:contain;flex-shrink:0;display:block}
+.ps-co-info{flex:1;display:flex;flex-direction:column;justify-content:center}
+.ps-co-name{font-size:17px;font-weight:700;color:#111;margin-bottom:2px}
+.ps-co-det{font-size:11px;color:#222;line-height:1.6}
+.ps-title{text-align:center;font-size:20px;font-weight:700;letter-spacing:.08em;margin-bottom:14px;color:#111;border-top:2px solid #111;border-bottom:2px solid #111;padding:6px 0}
+.ps-mg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.ps-box{border:1px solid #888;padding:8px 10px;font-size:11px;line-height:1.7}
+.ps-box-t{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#444;margin-bottom:4px;border-bottom:1px solid #ccc;padding-bottom:2px}
+.ps-ag{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ps-tbl{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:10px}
+.ps-tbl th{background:#f0f0f0;border:1px solid #888;padding:6px 8px;text-align:center;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#333;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.ps-tbl td{border:1px solid #ccc;padding:6px 8px;text-align:center;vertical-align:middle}
+.ps-tbl td.l{text-align:left}
+.ps-tbl tr:nth-child(even) td{background:#FAFAFA}
+.ps-tbl .ps-tr td{background:#f0f0f0;font-weight:700;border:1px solid #888;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.ps-sl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#333;margin-bottom:5px;margin-top:12px}
+.ps-ib{border:1px solid #888;padding:8px 10px;font-size:10.5px;min-height:50px;color:#333;line-height:1.6;margin-bottom:16px}
+.ps-sig-line{border-top:1.5px solid #444;width:200px;margin:40px 0 3px}
 </style>
 </head>
 <body>
 
 <header>
   <div style="display:flex;align-items:center;gap:0">
-    <h1>&#128196; 報價單工具 <span>Quotation · PI · Invoice</span></h1>
+    <h1>&#128196; 報價單工具 <span>Quotation · PI · Invoice · PS</span></h1>
     <div class="mode-toggle">
       <button id="modeQuot" class="mode-btn active" onclick="setDocMode('quotation')">Quotation</button>
       <button id="modePI"   class="mode-btn" onclick="setDocMode('pi')">Proforma Invoice</button>
       <button id="modeInv"  class="mode-btn" onclick="setDocMode('invoice')">Invoice</button>
+      <button id="modePS"   class="mode-btn" onclick="setDocMode('ps')" style="background:rgba(255,255,255,.08)">&#128230; Packing Slip</button>
     </div>
   </div>
   <div class="header-btns">
@@ -336,7 +357,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   <div class="form-panel">
 
     <!-- SELLER -->
-    <div class="card">
+    <div class="card no-ps">
       <div class="section-title">賣方 Seller</div>
       <div style="font-size:12px;color:var(--text);line-height:1.8;padding:4px 2px">
         <div style="font-weight:700;font-size:13px">CHIEN SHEN ENTERPRISE CO., LTD.</div>
@@ -347,7 +368,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     </div>
 
     <!-- QUOTE INFO -->
-    <div class="card">
+    <div class="card no-ps">
       <div class="section-title">文件資訊 Doc Info</div>
       <!-- Quotation fields -->
       <div id="quotFields">
@@ -430,7 +451,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     </div>
 
     <!-- BUYER -->
-    <div class="card">
+    <div class="card no-ps">
       <div class="section-title">買方 Buyer</div>
       <div class="form-group" style="margin-bottom:5px"><label>客戶通訊錄</label>
         <div class="csrow">
@@ -455,6 +476,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
       </div>
       <div style="border-top:1px solid var(--border-light);margin:8px 0 8px"></div>
       <div class="form-group"><label>公司名稱</label><input type="text" id="buyerName" value="Forcified Vision Solutions" oninput="render()"></div>
+      <div class="form-group"><label>Attn <span style="font-size:10px;color:var(--text-ph)">(選填)</span></label><input type="text" id="buyerAttn" placeholder="聯絡人姓名" oninput="render()"></div>
       <div class="form-group"><label>地址</label><input type="text" id="buyerAddr" value="Brautäcker 4, 34560 Fritzlar" oninput="render()"></div>
       <div class="form-row">
         <div class="form-group"><label>電話</label><input type="text" id="buyerPhone" value="+49 152 34712256" oninput="render()"></div>
@@ -463,14 +485,14 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     </div>
 
     <!-- ITEMS -->
-    <div class="card">
+    <div class="card no-ps">
       <div class="section-title">報價項目 Line Items</div>
       <div id="itemsContainer"></div>
       <button class="btn-add-item" onclick="addItem()">＋ 新增項目</button>
     </div>
 
     <!-- TAX / TOTALS -->
-    <div class="card">
+    <div class="card no-ps">
       <div class="section-title">小計 Totals</div>
       <div class="tax-row"><label>稅率 Tax Rate (%)</label><input type="number" id="taxRate" value="0" min="0" max="100" step="0.1" oninput="render()"></div>
       <div class="totals-block">
@@ -481,7 +503,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     </div>
 
     <!-- REMARKS -->
-    <div class="card">
+    <div class="card no-ps">
       <div class="section-title">備注 Remarks</div>
       <div class="form-group"><label>產地</label><input type="text" id="remarkOrigin" value="Taiwan" oninput="render()"></div>
       <div class="date-row">
@@ -512,7 +534,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
     </div>
 
     <!-- BANK (PI/Invoice only) -->
-    <div class="card pi-only" id="bankCard">
+    <div class="card pi-only no-ps" id="bankCard">
       <div class="section-title">銀行帳戶 Bank Account</div>
       <div class="form-group" style="margin-bottom:5px"><label>選擇帳戶</label>
         <div class="csrow">
@@ -540,9 +562,66 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
       </div>
     </div>
 
+
+    <!-- PACKING SLIP FIELDS (ps mode only) -->
+    <div id="psFields" style="display:none">
+
+      <!-- Ship Info row -->
+      <div class="card">
+        <div class="section-title">出貨資訊 Shipment Info</div>
+        <div class="form-row">
+          <div class="form-group"><label>Ship Date 出貨日期</label><input type="date" id="psShipDate" oninput="render()"></div>
+          <div class="form-group"><label>Order Date 訂單日期</label><input type="date" id="psOrderDate" oninput="render()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>PO # 採購單號</label><input type="text" id="psPoNum" placeholder="e.g. No. 01-04-K" oninput="render()"></div>
+          <div class="form-group"><label>Invoice # 發票號碼</label><input type="text" id="psInvNum" placeholder="e.g. 202611504" oninput="render()"></div>
+        </div>
+      </div>
+
+      <!-- Sold To: synced from Invoice buyer -->
+      <div class="card">
+        <div class="section-title">Sold To 買方 <span style="font-size:9px;color:var(--accent);font-weight:400;text-transform:none;letter-spacing:0">(同步自 Invoice)</span></div>
+        <div class="form-group"><label>公司名稱</label><input type="text" id="psSoldToName" oninput="onPsSoldToChange()"></div>
+        <div class="form-group"><label>地址</label><textarea id="psSoldToAddr" rows="2" oninput="onPsSoldToChange()"></textarea></div>
+        <div class="form-group"><label>電話</label><input type="text" id="psSoldToPhone" oninput="onPsSoldToChange()"></div>
+      </div>
+
+      <!-- Ship To -->
+      <div class="card">
+        <div class="section-title">Ship To Destination 送貨地址</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-muted);cursor:pointer;margin-bottom:8px">
+          <input type="checkbox" id="psSameAsSold" onchange="onPsSameAsSold()" style="width:auto;margin:0"> Same as Sold To
+        </label>
+        <div class="form-group"><label>公司名稱</label><input type="text" id="psShipToName" oninput="render()"></div>
+        <div class="form-group"><label>地址</label><textarea id="psShipToAddr" rows="2" oninput="render()"></textarea></div>
+        <div class="form-group"><label>電話</label><input type="text" id="psShipToPhone" oninput="render()"></div>
+      </div>
+
+      <!-- Pallet Details -->
+      <div class="card">
+        <div class="section-title">包裝單位 Packing Units</div>
+        <div id="psPalletContainer"></div>
+        <button class="btn-add-item" onclick="addPsPallet()">＋ 新增單位</button>
+      </div>
+
+      <!-- Packing List Summary -->
+      <div class="card">
+        <div class="section-title">Packing List Summary</div>
+        <div id="psPackingContainer"></div>
+        <button class="btn-add-item" onclick="addPsPacking()">＋ 新增品項</button>
+      </div>
+
+      <!-- Shipping Instructions -->
+      <div class="card">
+        <div class="section-title">Shipping Instructions</div>
+        <textarea id="psInstructions" rows="3" oninput="render()" placeholder="特殊運輸說明..."></textarea>
+      </div>
+
+    </div><!-- /psFields -->
   </div><!-- /form-panel -->
   <div class="resizer" id="resizer"></div>
-  <div class="preview-panel" id="previewPanel"><div id="quote-preview"></div></div>
+  <div class="preview-panel" id="previewPanel"><div id="quote-preview"></div><div id="ps-preview" style="display:none;background:#fff;width:794px;min-height:1123px;padding:32px 40px;box-shadow:var(--shadow);font-family:'Times New Roman',Times,serif;font-size:12px;color:#111"></div></div>
 </div><!-- /workspace -->
 
 <!-- Price History Modal -->
@@ -859,22 +938,37 @@ async function gasCall(action, payload = {}) {
 let docMode = 'quotation';
 function setDocMode(mode) {
   docMode = mode;
-  ['Quot','PI','Inv'].forEach(m => {
+  ['Quot','PI','Inv','PS'].forEach(m => {
     const el = document.getElementById('mode'+m);
-    if (el) el.classList.toggle('active', mode === {Quot:'quotation',PI:'pi',Inv:'invoice'}[m]);
+    if (el) el.classList.toggle('active', mode === {Quot:'quotation',PI:'pi',Inv:'invoice',PS:'ps'}[m]);
   });
   const s = id => document.getElementById(id);
   if (s('quotFields')) s('quotFields').style.display = mode==='quotation'?'':'none';
   if (s('piFields'))   s('piFields').style.display   = mode==='pi'?'':'none';
   if (s('invFields'))  s('invFields').style.display  = mode==='invoice'?'':'none';
+  if (s('psFields'))   s('psFields').style.display   = mode==='ps'?'':'none';
+  document.querySelectorAll('.no-ps').forEach(e => e.style.display = mode==='ps' ? 'none' : '');
   document.querySelectorAll('.pi-only').forEach(e => e.style.display = (mode==='pi'||mode==='invoice')?'block':'none');
-  if (s('validDateGroup')) s('validDateGroup').style.display = (mode==='pi'||mode==='invoice')?'none':'';
+  const psBtn = document.getElementById('btnPackingSlip');
+  if (psBtn) psBtn.style.display = mode==='invoice' ? '' : 'none';
+  // Toggle which preview is visible
+  const qp = document.getElementById('quote-preview');
+  const pp = document.getElementById('ps-preview');
+  if (qp) qp.style.display = mode==='ps' ? 'none' : '';
+  if (pp) pp.style.display = mode==='ps' ? '' : 'none';
+  if (s('validDateGroup')) s('validDateGroup').style.display = (mode==='pi'||mode==='invoice'||mode==='ps')?'none':'';
   if (mode==='invoice') {
     const poPi = s('poNum')?.value || '';
     if (s('invPoNum') && !s('invPoNum').value) s('invPoNum').value = poPi;
     const piN = s('piNum')?.value || '';
     if (s('invRefPi') && !s('invRefPi').value) s('invRefPi').value = piN;
     if (s('invDate') && !s('invDate').value) s('invDate').value = new Date().toISOString().slice(0,10);
+  }
+  if (mode==='ps') {
+    psPallets  = [{unit:'pallet', contents:'', nw:'', gw:'', length:'', width:'', height:''}];
+    psPackings = [{pkg:'', desc:'', qty:'', nw:'', gw:'', lxwxh:''}];
+    initPsFromInvoice();
+    renderPsForms();
   }
   render();
 }
@@ -912,7 +1006,7 @@ function loadContactIntoBuyer() {
   const c = contacts.find(x => x.id===id);
   if (!c) return;
   const s = (i,v) => { const el=document.getElementById(i); if(el) el.value=v||''; };
-  s('buyerName',c.name); s('buyerAddr',c.addr); s('buyerPhone',c.phone); s('buyerEmail',c.email);
+  s('buyerName',c.name); s('buyerAttn',''); s('buyerAddr',c.addr); s('buyerPhone',c.phone); s('buyerEmail',c.email);
   render();
 }
 // openEditPanel and closeEditPanel consolidated above
@@ -1303,7 +1397,7 @@ function newDocument() {
   clear('quotNum'); clear('quotDate'); clear('piNum'); clear('piDate');
   clear('poNum'); clear('invNum'); clear('invDate'); clear('invPoNum');
   clear('invRefPi'); clear('invDepositAmt'); clear('invDepositPct');
-  clear('buyerName'); clear('buyerAddr'); clear('buyerPhone'); clear('buyerEmail');
+  clear('buyerName'); clear('buyerAttn'); clear('buyerAddr'); clear('buyerPhone'); clear('buyerEmail');
   clear('incoLocation'); clear('otherRemarks'); clear('remarkOrigin');
   clear('validDate'); clear('taxRate');
   clear('director');
@@ -1342,7 +1436,7 @@ function saveRecord() {
     invNum:(v('invNum')||'')+(v('invSuffix')||''), invDate:v('invDate'),
     invPoNum:v('invPoNum'), invRefPi:v('invRefPi'),
     invDepositType:v('invDepositType'), invDepositAmt:v('invDepositAmt'), invDepositPct:v('invDepositPct'),
-    buyer:v('buyerName'), buyerPhone:v('buyerPhone'), buyerEmail:v('buyerEmail'), buyerAddr:v('buyerAddr'),
+    buyer:v('buyerName'), buyerAttn:v('buyerAttn'), buyerPhone:v('buyerPhone'), buyerEmail:v('buyerEmail'), buyerAddr:v('buyerAddr'),
     incoTerm, payment, currency:curCode,
     items: items.map(it=>({...it})),
     batches: batches.map(b=>({...b})),
@@ -1359,7 +1453,7 @@ function saveRecord() {
 function loadRecordIntoForm(rec) {
   const s = (id,val) => { const e=document.getElementById(id); if(e) e.value=val||''; };
   s('sellerName',rec.seller); s('buyerName',rec.buyer); s('buyerAddr',rec.buyerAddr);
-  s('buyerPhone',rec.buyerPhone); s('buyerEmail',rec.buyerEmail);
+  s('buyerAttn',rec.buyerAttn||''); s('buyerPhone',rec.buyerPhone); s('buyerEmail',rec.buyerEmail);
   // INCO
   const isel = document.getElementById('incoTermSel');
   const ivals = ['DAP','EXW','FOB','CIF','CIP','CFR','DDP','FCA'];
@@ -1512,7 +1606,8 @@ function renderPreview() {
   const taxRowHTML    = taxRate>0?`<tr><td>Tax (${taxRate}%)</td><td>${cur}${fmtMoney(tax)}</td></tr>`:'';
   const remarkLines   = buildRemarks();
   const remarksHTML   = remarkLines.map(l=>`<div>${escHtml(l)}</div>`).join('');
-  const buyerBlock    = [v('buyerName'),v('buyerAddr'),v('buyerPhone'),v('buyerEmail')].filter(Boolean).map(escHtml).join('<br>');
+  const buyerAttnVal = v('buyerAttn');
+  const buyerBlock    = [v('buyerName'), buyerAttnVal?`Attn: ${buyerAttnVal}`:null, v('buyerAddr'),v('buyerPhone'),v('buyerEmail')].filter(Boolean).map(escHtml).join('<br>');
   const hasDesc = items.some(it=>it.descType==='desc'||it.descType==='both');
   const hasNsn  = items.some(it=>it.descType==='nsn'||it.descType==='both');
   const colHeader = hasDesc&&hasNsn ? 'NSN / Description' : hasNsn ? 'NSN Number' : 'Description';
@@ -1589,12 +1684,13 @@ function renderPreview() {
   const pvLogo = document.getElementById('pvLogo');
   if (pvLogo) pvLogo.src = LOGO_SRC;
 }
-function render() { try { renderItemsForm(); renderBatches(); updateTotalsDisplay(); renderPreview(); } catch(e) { console.error('render error:', e); document.getElementById('quote-preview').innerHTML = `<div style="padding:20px;color:red;font-family:monospace;font-size:12px">⚠ 預覽錯誤: ${e.message}<br>${e.stack}</div>`; } }
+function render() { try { if (docMode==='ps') { renderPackingSlipPreview(); return; } renderItemsForm(); renderBatches(); updateTotalsDisplay(); renderPreview(); } catch(e) { console.error('render error:', e); document.getElementById('quote-preview').innerHTML = `<div style="padding:20px;color:red;font-family:monospace;font-size:12px">⚠ 預覽錯誤: ${e.message}<br>${e.stack}</div>`; } }
 
 // ══════════════════════════════════════════
 //  PDF EXPORT
 // ══════════════════════════════════════════
 async function exportPDF() {
+  if (docMode === 'ps') { exportPackingSlipPDF(); return; }
   exportPDFPrint();
 }
 
@@ -2162,6 +2258,281 @@ function loadInvFromDropdown(rec) {
   setDocMode('invoice');
   loadRecordIntoForm(rec);
   closeRecords();
+}
+
+// ══════════════════════════════════════════
+//  PACKING SLIP
+// ══════════════════════════════════════════
+let psDetails = [{palletNum:'1', wcNum:'', cnNum:'', desc:'', nw:'', gw:'', length:'', width:'', height:''}];
+let psPallets = [{unit:'pallet', contents:'', nw:'', gw:'', length:'', width:'', height:''}];
+let psPackings = [{pkg:'', desc:'', qty:'', nw:'', gw:'', lxwxh:''}];
+
+function initPsFromInvoice() {
+  const sv = (id,val) => { const e=document.getElementById(id); if(e) e.value=val||''; };
+  sv('psSoldToName', v('buyerName'));
+  sv('psSoldToAddr',  v('buyerAddr'));
+  sv('psSoldToPhone', v('buyerPhone'));
+  const psAttn = v('buyerAttn'); if(psAttn) sv('psSoldToName', v('buyerName') + (psAttn ? '\nAttn: '+psAttn : ''));
+  // Pre-fill Ship/Order date and invoice/PO numbers
+  sv('psInvNum', (v('invNum')||'')+(v('invSuffix')||''));
+  sv('psPoNum',  v('invPoNum')||v('poNum')||'');
+  sv('psShipDate', v('invDate')||v('quotDate')||'');
+  // Ship To = Sold To by default
+  document.getElementById('psSameAsSold').checked = true;
+  sv('psShipToName', v('buyerName'));
+  sv('psShipToAddr',  v('buyerAddr'));
+  sv('psShipToPhone', v('buyerPhone'));
+  // Reset tables
+  psPallets  = [{contents:'', nw:'', gw:'', length:'', width:'', height:''}];
+  psPackings = [{pkg:'', desc:'', qty:'', nw:'', gw:'', lxwxh:''}];
+}
+
+function onPsSoldToChange() {
+  if (document.getElementById('psSameAsSold')?.checked) {
+    const sv=(id,val)=>{const e=document.getElementById(id);if(e)e.value=val||'';};
+    sv('psShipToName', v('psSoldToName'));
+    sv('psShipToAddr',  v('psSoldToAddr'));
+    sv('psShipToPhone', v('psSoldToPhone'));
+  }
+  render();
+}
+function onPsSameAsSold() {
+  if (document.getElementById('psSameAsSold')?.checked) {
+    const sv=(id,val)=>{const e=document.getElementById(id);if(e)e.value=val||'';};
+    sv('psShipToName', v('psSoldToName'));
+    sv('psShipToAddr',  v('psSoldToAddr'));
+    sv('psShipToPhone', v('psSoldToPhone'));
+  }
+  render();
+}
+
+function addPsPallet()   { psPallets.push({unit:'pallet',contents:'',nw:'',gw:'',length:'',width:'',height:''}); renderPsForms(); render(); }
+function removePsPallet(i){ psPallets.splice(i,1); renderPsForms(); render(); }
+function upPsPallet(i,f,val){ psPallets[i][f]=val; render(); }
+function upPsPalletUnit(i,val){ psPallets[i].unit=val; renderPsForms(); render(); }
+
+function addPsPacking()   { psPackings.push({pkg:'',desc:'',qty:'',nw:'',gw:'',lxwxh:''}); renderPsForms(); render(); }
+function removePsPacking(i){ psPackings.splice(i,1); renderPsForms(); render(); }
+function upPsPacking(i,f,val){ psPackings[i][f]=val; render(); }
+
+// Keep old names for compatibility
+function addPsDetail()    { addPsPallet(); }
+function removePsDetail(i){ removePsPallet(i); }
+function upPsDetail(i,f,v){ upPsPallet(i,f,v); }
+
+function renderPsForms() {
+  const unitName = u => u==='woodencase'?'Wooden Case':u==='carton'?'Carton':u==='crate'?'Crate':'Pallet';
+  const unitNameZh = u => u==='woodencase'?'木箱':u==='carton'?'紙箱':u==='crate'?'板條箱':'棧板'; // kept for display
+  const pc = document.getElementById('psPalletContainer');
+  if (pc) pc.innerHTML = psPallets.map((d,i) => `
+    <div class="item-card">
+      <div class="item-card-header">
+        <span class="item-card-num">${unitNameZh(d.unit)} ${i+1}</span>
+        <button class="btn-remove" onclick="removePsPallet(${i})">&#215;</button>
+      </div>
+      <div class="form-group"><label>單位類型</label><select oninput="upPsPalletUnit(${i},this.value)" onchange="upPsPalletUnit(${i},this.value)">
+        <option value="pallet" ${d.unit==='pallet'?'selected':''}>Pallet 棧板</option>
+        <option value="woodencase" ${d.unit==='woodencase'?'selected':''}>Wooden Case 木箱</option>
+        <option value="carton" ${d.unit==='carton'?'selected':''}>Carton 紙箱</option>
+        <option value="crate" ${d.unit==='crate'?'selected':''}>Crate 板條箱</option>
+      </select></div>
+      <div class="form-group"><label>Contents 內容物 <span style="font-size:10px;color:var(--text-ph)">（Enter 換行）</span></label>
+        <textarea rows="2" oninput="upPsPallet(${i},'contents',this.value)"
+          style="font-size:12.5px;line-height:1.5;resize:vertical"
+          placeholder="e.g. M17 Periscope">${escHtml(d.contents)}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>N.W. (KG)</label><input type="number" value="${d.nw}" oninput="upPsPallet(${i},'nw',this.value)" min="0" step="0.1"></div>
+        <div class="form-group"><label>G.W. (KG)</label><input type="number" value="${d.gw}" oninput="upPsPallet(${i},'gw',this.value)" min="0" step="0.1"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>L (CM)</label><input type="number" value="${d.length}" oninput="upPsPallet(${i},'length',this.value)" min="0"></div>
+        <div class="form-group"><label>W (CM)</label><input type="number" value="${d.width}" oninput="upPsPallet(${i},'width',this.value)" min="0"></div>
+        <div class="form-group"><label>H (CM)</label><input type="number" value="${d.height}" oninput="upPsPallet(${i},'height',this.value)" min="0"></div>
+      </div>
+    </div>`).join('');
+
+  const packc = document.getElementById('psPackingContainer');
+  if (packc) packc.innerHTML = psPackings.map((p,i) => `
+    <div class="item-card">
+      <div class="item-card-header">
+        <span class="item-card-num">品項 ${i+1}</span>
+        <button class="btn-remove" onclick="removePsPacking(${i})">&#215;</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Package #</label><input type="text" value="${escHtml(p.pkg)}" oninput="upPsPacking(${i},'pkg',this.value)" placeholder="e.g. 1-10 CTN"></div>
+        <div class="form-group"><label>Qty 數量</label><input type="number" value="${p.qty}" oninput="upPsPacking(${i},'qty',this.value)" min="0"></div>
+      </div>
+      <div class="form-group"><label>Description 品名</label><input type="text" value="${escHtml(p.desc)}" oninput="upPsPacking(${i},'desc',this.value)" placeholder="e.g. M17 Periscope"></div>
+      <div class="form-row-3">
+        <div class="form-group"><label>N.W. (KG)</label><input type="number" value="${p.nw}" oninput="upPsPacking(${i},'nw',this.value)" min="0" step="0.01"></div>
+        <div class="form-group"><label>G.W. (KG)</label><input type="number" value="${p.gw}" oninput="upPsPacking(${i},'gw',this.value)" min="0" step="0.01"></div>
+        <div class="form-group"><label>LxWxH (CM)</label><input type="text" value="${escHtml(p.lxwxh)}" oninput="upPsPacking(${i},'lxwxh',this.value)" placeholder="30x47.5x35"></div>
+      </div>
+    </div>`).join('');
+}
+
+function fmtDatePS(s) {
+  if (!s) return '';
+  const d = new Date(s+'T00:00:00');
+  return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+}
+
+function renderPackingSlipPreview() {
+  const el = document.getElementById('ps-preview');
+  if (!el) return;
+
+  const soldToHtml = [v('psSoldToName'),v('psSoldToAddr'),v('psSoldToPhone')].filter(Boolean).map(escHtml).join('<br>');
+  const shipToHtml = [v('psShipToName'),v('psShipToAddr'),v('psShipToPhone')].filter(Boolean).map(escHtml).join('<br>');
+  const totalNW = psPallets.reduce((s,d)=>s+(parseFloat(d.nw)||0),0);
+  const totalGW = psPallets.reduce((s,d)=>s+(parseFloat(d.gw)||0),0);
+  // Parse package count from pkg field: range "1-5" → 5 boxes, single "6" → 1 box
+  const parsePkgCount = pkg => {
+    const m = String(pkg||'').match(/(\d+)\s*[-~]\s*(\d+)/);
+    if (m) return parseInt(m[2]) - parseInt(m[1]) + 1;
+    return 1;
+  };
+  const packTotalNW = psPackings.reduce((s,p)=>s+(parseFloat(p.nw)||0)*parsePkgCount(p.pkg),0);
+  const packTotalGW = psPackings.reduce((s,p)=>s+(parseFloat(p.gw)||0)*parsePkgCount(p.pkg),0);
+  const fmt = n => n>0?(n%1===0?n:n.toFixed(2)):'';
+
+  const unitLabel = u => u==='woodencase'?'Wooden Case':u==='carton'?'Carton':u==='crate'?'Crate':'Pallet';
+  const palletRows = psPallets.map((d,i)=>`<tr>
+    <td style="white-space:nowrap">${unitLabel(d.unit)}<br>${i+1}</td>
+    <td class="l" style="white-space:pre-line">${escHtml(d.contents)}</td>
+    <td>${d.nw||''}</td><td>${d.gw||''}</td>
+    <td>${d.length||''}</td><td>${d.width||''}</td><td>${d.height||''}</td>
+  </tr>`).join('');
+
+  const packRows = psPackings.map(p=>`<tr>
+    <td class="l">${escHtml(p.pkg)}</td>
+    <td class="l">${escHtml(p.desc)}</td>
+    <td>${p.qty||''}</td>
+    <td>${p.nw||''}</td><td>${p.gw||''}</td>
+    <td>${escHtml(p.lxwxh)}</td>
+  </tr>`).join('');
+
+  const invNum = v('psInvNum') || (v('invNum')||'')+(v('invSuffix')||'');
+  const poNum  = v('psPoNum')  || v('invPoNum') || v('poNum') || '';
+  const shipDate = v('psShipDate') || v('invDate') || v('quotDate') || '';
+  const orderDate = v('psOrderDate') || '';
+
+  el.innerHTML = `
+    <div class="ps-lh">
+      <img class="ps-logo" id="psLogo" alt="CS">
+      <div class="ps-co-info">
+        <div class="ps-co-name">CHIEN SHEN ENTERPRISE CO., LTD.</div>
+        <div class="ps-co-det">Email : chienshen532@gmail.com<br>TEL: +886-6-2552939 &nbsp;&nbsp;&nbsp;&nbsp; Fax: +886-6-2553189<br>Addr: No. 32, Aly 97, Ln. 532, Sec. 1, AnJi Rd., Annan Dist., Tainan City 70953, Taiwan (R.O.C.)</div>
+      </div>
+    </div>
+    <div class="ps-title">PACKING SLIP</div>
+    <div class="ps-ag" style="margin-bottom:12px">
+      <div class="ps-box">
+        <div class="ps-box-t">Ship From</div>
+        <div style="font-size:10.5px;line-height:1.7">CHIEN SHEN ENTERPRISE CO., LTD.<br>No. 32, Aly 97, Ln. 532, Sec. 1, AnJi Rd., Annan Dist.,<br>TAINAN, 70953, TAIWAN (R. O. C.)<br>Phone: +886-6-2552939<br>Fax: +886-6-2553189<br>Email: chienshen532@gmail.com</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div class="ps-box" style="padding:5px 10px;font-size:10.5px"><b>SHIP DATE:</b> ${fmtDatePS(shipDate)}</div>
+        <div class="ps-box" style="padding:5px 10px;font-size:10.5px"><b>ORDER DATE:</b> ${fmtDatePS(orderDate)}</div>
+        <div class="ps-box" style="padding:5px 10px;font-size:10.5px"><b>PO #:</b> ${escHtml(poNum)}</div>
+        <div class="ps-box" style="padding:5px 10px;font-size:10.5px"><b>INVOICE #:</b> ${escHtml(invNum)}</div>
+        <div class="ps-box" style="padding:5px 10px;flex:1">&nbsp;</div>
+        <div class="ps-box" style="padding:5px 10px;flex:1">&nbsp;</div>
+      </div>
+    </div>
+    <div class="ps-ag" style="margin-bottom:14px">
+      <div class="ps-box">
+        <div class="ps-box-t">Ship To Destination</div>
+        <div style="font-size:11px;font-weight:600;line-height:1.7">${shipToHtml||'&nbsp;'}</div>
+      </div>
+      <div class="ps-box">
+        <div class="ps-box-t">Sold To</div>
+        <div style="font-size:11px;font-weight:600;line-height:1.7">${soldToHtml||'&nbsp;'}</div>
+      </div>
+    </div>
+    <table class="ps-tbl">
+      <thead>
+        <tr>
+          <th rowspan="2" style="width:60px">Unit /<br>#</th>
+          <th rowspan="2">Contents</th>
+          <th rowspan="2" style="width:52px">N. W.<br>(KG)</th>
+          <th rowspan="2" style="width:52px">G. W.<br>(KG)</th>
+          <th colspan="3" style="background:#e0e0e0;-webkit-print-color-adjust:exact;print-color-adjust:exact">SIZE</th>
+        </tr>
+        <tr>
+          <th style="width:52px">Length<br>(CM)</th>
+          <th style="width:52px">Width<br>(CM)</th>
+          <th style="width:52px">Height<br>(CM)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${palletRows}
+        <tr class="ps-tr">
+          <td colspan="2" style="text-align:right;font-size:9.5px;letter-spacing:.04em">TOTAL WEIGHT:</td>
+          <td>${fmt(totalNW)||totalNW||''}</td>
+          <td>${fmt(totalGW)||totalGW||''}</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="ps-sl">Packing List Summary</div>
+    <table class="ps-tbl">
+      <thead><tr>
+        <th style="width:80px">Package #</th>
+        <th>Description</th>
+        <th style="width:40px">Qty</th>
+        <th style="width:55px">N. W.<br>(KG)</th>
+        <th style="width:55px">G. W.<br>(KG)</th>
+        <th style="width:90px">LxWxH<br>(CM)</th>
+      </tr></thead>
+      <tbody>
+        ${packRows}
+        <tr class="ps-tr">
+          <td colspan="3" style="text-align:right;font-size:9.5px;letter-spacing:.04em">TOTAL WEIGHT:</td>
+          <td>${fmt(packTotalNW)}</td>
+          <td>${fmt(packTotalGW)}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="ps-sl">Shipping Instructions</div>
+    <div class="ps-ib">${escHtml(v('psInstructions')).replace(/\n/g,'<br>')||'&nbsp;'}</div>
+    <div style="margin-top:20px">
+      <div style="font-size:11px;color:#333">
+        <div style="font-weight:700;font-size:12px;margin-bottom:4px">CHIEN SHEN ENTERPRISE CO., LTD.</div>
+        <div style="font-weight:600;margin-bottom:2px">Director</div>
+        <div class="ps-sig-line"></div>
+        <div style="font-size:11px;color:#555">${escHtml(v('director'))}</div>
+      </div>
+    </div>`;
+  const psLogo = document.getElementById('psLogo');
+  if (psLogo) psLogo.src = LOGO_SRC;
+}
+
+function exportPackingSlipPDF() {
+  const el = document.getElementById('ps-preview');
+  if (!el || !el.innerHTML.trim()) { showToast('請先填寫裝箱單資料', '#E67E22'); return; }
+  const clone = el.cloneNode(true);
+  const logo = clone.querySelector('#psLogo'); if (logo) logo.src = LOGO_SRC;
+  clone.id = 'ps-pp';
+  const mainStyle = Array.from(document.styleSheets)
+    .filter(ss=>{try{return ss.cssRules;}catch(e){return false;}})
+    .flatMap(ss=>Array.from(ss.cssRules))
+    .filter(r=>r.selectorText&&(r.selectorText.includes('.ps')||r.selectorText.includes('#ps-preview')))
+    .map(r=>r.cssText).join('\n');
+  const win = window.open('','_blank','width=900,height=700');
+  if (!win) { showToast('請允許彈出視窗','#E67E22'); return; }
+  win.document.open();
+  win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Packing Slip</title>');
+  win.document.write('<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#ccc;padding:20px;font-family:"Times New Roman",Times,serif}');
+  win.document.write(mainStyle);
+  win.document.write('#ps-pp{background:#fff;width:794px;padding:32px 40px;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.2)}');
+  win.document.write('@media print{body{background:white!important;padding:0!important}#ps-pp{width:210mm!important;padding:12mm 14mm!important;box-shadow:none!important;margin:0!important}@page{size:A4 portrait;margin:0}}');
+  win.document.write('</style></head><body>');
+  win.document.write(clone.outerHTML);
+  win.document.write('<img src=x onerror="setTimeout(function(){window.print();window.onafterprint=function(){window.close()}},600)" style="display:none">');
+  win.document.write('</body></html>');
+  win.document.close();
 }
 
 // ══════════════════════════════════════════
