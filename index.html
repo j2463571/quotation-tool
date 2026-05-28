@@ -1283,6 +1283,9 @@ function renderRecords() {
     } else if (dm === 'invoice') {
       // Link by quotNum or refPI
       key = r.quotNum ? ('Q_' + r.quotNum) : (r.invRefPi ? ('PI_' + r.invRefPi) : (r.invNum ? ('INV_' + r.invNum) : ('_' + r.id)));
+    } else if (dm === 'ps') {
+      // Link PS to inv by psInvNum, or quotNum
+      key = r.quotNum ? ('Q_' + r.quotNum) : (r.psInvNum ? ('INV_' + r.psInvNum) : ('_' + r.id));
     } else {
       key = '_' + r.id;
     }
@@ -1314,8 +1317,8 @@ function renderRecords() {
   if (!groupArr.length) { tbody.innerHTML='<tr><td colspan="7" class="rec-empty">尚無紀錄。按「儲存」新增。</td></tr>'; return; }
 
   const btnStyle = (bg) => `style="background:${bg};color:#fff;border:none;border-radius:3px;padding:3px 8px;font-size:10.5px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif"`;
-  const MC = {quotation:'#1A5276',pi:'#7D3C98',invoice:'#1E8449'};
-  const ML = {quotation:'Q',pi:'PI',invoice:'INV'};
+  const MC = {quotation:'#1A5276',pi:'#7D3C98',invoice:'#1E8449',ps:'#117A65'};
+  const ML = {quotation:'Q',pi:'PI',invoice:'INV',ps:'PL'};
 
   tbody.innerHTML = groupArr.map(g => {
     const allRecs = g.recs;
@@ -1323,10 +1326,12 @@ function renderRecords() {
     const qRec    = allRecs.find(r => (r.docMode||'quotation')==='quotation');
     const piRecs  = allRecs.filter(r => r.docMode==='pi');
     const invRecs = allRecs.filter(r => r.docMode==='invoice');
+    const psRecs  = allRecs.filter(r => r.docMode==='ps');
     const piRec   = piRecs[0] || null;
     const invRec  = invRecs[0] || null;
+    const psRec   = psRecs[0] || null;
     // Use Q as primary for display, fallback to earliest
-    const primary = qRec || piRec || invRec || allRecs[0];
+    const primary = qRec || piRec || invRec || psRec || allRecs[0];
     const dd = primary.quotDate || primary.piDate || primary.invDate || '';
     const itags = (primary.items||[]).map(it=>`<span class="rec-tag">${escHtml(it.item)}</span>`).join('');
     const latestRec = allRecs.reduce((a,b) => b.id > a.id ? b : a);
@@ -1336,7 +1341,7 @@ function renderRecords() {
     // Document number badges
     const numBadges = allRecs.map(r => {
       const dm = r.docMode||'quotation';
-      const dn = dm==='pi'?(r.piNum||'PI'):dm==='invoice'?((r.invNum||'')+(r.invSuffix||'')):(r.quotNum||'Q');
+      const dn = dm==='pi'?(r.piNum||'PI'):dm==='invoice'?((r.invNum||'')+(r.invSuffix||'')):dm==='ps'?(r.psInvNum||r.invNum||'PL'):(r.quotNum||'Q');
       return `<span style="background:${MC[dm]};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:2px">${ML[dm]}</span><span style="font-family:'DM Mono',monospace;font-size:10px;margin-right:6px">${escHtml(dn)}</span>`;
     }).join('');
 
@@ -1361,6 +1366,12 @@ function renderRecords() {
       const js = JSON.stringify(r).replace(/"/g,'&quot;');
       const label = invRecs.length > 1 ? `INV${i+1}` : 'INV';
       actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1E8449')} onclick="setDocMode('invoice');loadRecordIntoForm(${js})">${label}</button><button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除 ${label}" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    });
+    // All PLs (Packing Slips)
+    psRecs.forEach((r,i) => {
+      const js = JSON.stringify(r).replace(/"/g,'&quot;');
+      const label = psRecs.length > 1 ? `PL${i+1}` : 'PL';
+      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#117A65')} onclick="setDocMode('ps');loadRecordIntoForm(${js})">${label}</button><button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除 ${label}" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
     });
     // Extend buttons for missing docs
     const jsLatest = JSON.stringify(latestRec).replace(/"/g,'&quot;');
@@ -1441,6 +1452,12 @@ function saveRecord() {
     items: items.map(it=>({...it})),
     batches: batches.map(b=>({...b})),
     subtotal, tax, total, remarks: buildRemarks(),
+    // PS fields
+    psInvNum: docMode==='ps'?v('psInvNum'):'',
+    psPoNum:  docMode==='ps'?v('psPoNum'):'',
+    psSoldToName: docMode==='ps'?v('psSoldToName'):'',
+    psPallets: docMode==='ps'?JSON.parse(JSON.stringify(psPallets)):[],
+    psPackings: docMode==='ps'?JSON.parse(JSON.stringify(psPackings)):[],
   };
   quoteRecords.unshift(rec);
   const btn = document.querySelector('.btn-hdr-save');
@@ -1483,6 +1500,15 @@ function loadRecordIntoForm(rec) {
   // Items + batches
   items   = (rec.items||[]).map(it=>({...it,descType:it.descType||'desc'}));
   batches = (rec.batches||[]).map(b=>({...b}));
+  // PS fields
+  if (rec.docMode === 'ps') {
+    const sv = (id,val) => { const e=document.getElementById(id); if(e) e.value=val||''; };
+    sv('psInvNum', rec.psInvNum||''); sv('psPoNum', rec.psPoNum||'');
+    sv('psSoldToName', rec.psSoldToName||rec.buyer||'');
+    if (rec.psPallets?.length)  { psPallets  = rec.psPallets.map(p=>({...p})); }
+    if (rec.psPackings?.length) { psPackings = rec.psPackings.map(p=>({...p})); }
+    renderPsForms();
+  }
   closeRecords(); renderBatches(); render(); window.scrollTo(0,0);
 }
 
@@ -1600,7 +1626,7 @@ function renderPreview() {
   const dateFormatted = docMode==='pi'?fmtDate(v('piDate')):docMode==='invoice'?fmtDate(v('invDate')):fmtDate(v('quotDate'));
   const invFullNum    = (v('invNum')||'')+(v('invSuffix')||'');
   const docNumber     = docMode==='pi'?v('piNum'):docMode==='invoice'?invFullNum:v('quotNum');
-  const title         = docMode==='pi'?'PROFORMA INVOICE':docMode==='invoice'?'INVOICE':'Quotation';
+  const title         = docMode==='pi'?'PROFORMA INVOICE':docMode==='invoice'?'INVOICE':'QUOTATION';
   const numLabel      = docMode==='pi'?'PI #':docMode==='invoice'?'Invoice #':'Quot. #';
   const taxRate       = parseFloat(v('taxRate'))||0;
   const taxRowHTML    = taxRate>0?`<tr><td>Tax (${taxRate}%)</td><td>${cur}${fmtMoney(tax)}</td></tr>`:'';
@@ -1794,6 +1820,7 @@ function renderPriceHistory() {
     let gKey;
     if (dm === 'quotation') gKey = r.quotNum ? ('Q_'+r.quotNum) : ('_'+r.id);
     else if (dm === 'pi')   gKey = r.quotNum ? ('Q_'+r.quotNum) : (r.piNum ? ('PI_'+r.piNum) : ('_'+r.id));
+    else if (dm === 'ps')   gKey = r.quotNum ? ('Q_'+r.quotNum) : (r.psInvNum ? ('INV_'+r.psInvNum) : ('_'+r.id));
     else                    gKey = r.quotNum ? ('Q_'+r.quotNum) : (r.invRefPi ? ('PI_'+r.invRefPi) : (r.invNum ? ('INV_'+r.invNum) : ('_'+r.id)));
     if (!groupMap[gKey] || r.id > groupMap[gKey].id) groupMap[gKey] = r;
   });
@@ -1865,7 +1892,7 @@ function exportRecordsPDF() {
   const SYMS = {EUR:'€',USD:'$',TWD:'NT$',CNY:'¥',GBP:'£'};
   const sym  = r => SYMS[r.currency]||r.currency||'';
   const fmtD = s => s?(s+'').replace(/-/g,'/'):' ';
-  const MC   = {quotation:'#1A5276',pi:'#7D3C98',invoice:'#1E8449'};
+  const MC   = {quotation:'#1A5276',pi:'#7D3C98',invoice:'#1E8449',ps:'#117A65'};
   const ML   = {quotation:'Q',pi:'PI',invoice:'INV'};
 
   let recs = quoteRecords.filter(r => {
