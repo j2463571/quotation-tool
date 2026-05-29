@@ -1351,6 +1351,8 @@ function renderRecords() {
     if (r.id > groups[key].latestId) groups[key].latestId = r.id;
   });
 
+  let groupArr = Object.values(groups);
+
   // Sort groups by document date (newest first)
   const getGroupDate = g => {
     const r = g.recs.reduce((a,b) => b.id > a.id ? b : a);
