@@ -806,7 +806,10 @@ function saveNsnFromItem(itemIdx) {
   const nsn  = document.getElementById('npp_'+itemIdx)?.value.trim();
   if (!name || !nsn) { showToast('請填寫名稱與 NSN Number','#E74C3C'); return; }
   const desc = document.getElementById('npd_'+itemIdx)?.value.trim();
-  nsnBook.push({ id: nextNsnId++, name, nsn, desc }); saveNsnToCloud();
+  nsnBook.push({ id: nextNsnId++, name, nsn, desc });
+  // Save synchronously to localStorage immediately
+  try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); console.log('NSN saved:', nsnBook.length); } catch(e) { console.error('NSN save error:', e); }
+  saveNsnToCloud(); // also sync to cloud in background
   rebuildNsnSelect();
   // Also apply this NSN to the item immediately
   items[itemIdx].desc = nsn + (desc ? ' — ' + desc : '');
@@ -836,7 +839,9 @@ function applyNsnEntry(itemIdx, nsnId) {
 }
 
 function deleteNsnEntry(nsnId, itemIdx) {
-  nsnBook = nsnBook.filter(n => n.id !== nsnId); saveNsnToCloud();
+  nsnBook = nsnBook.filter(n => n.id !== nsnId);
+  try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); console.log('NSN saved:', nsnBook.length); } catch(e) { console.error('NSN save error:', e); }
+  saveNsnToCloud();
   rebuildNsnSelect();
   renderNsnManageList(itemIdx);
   render();
@@ -932,11 +937,15 @@ function saveNsnEntry() {
   if (!name || !nsn) { showToast('請填寫名稱與 NSN Number', '#E74C3C'); return; }
   const desc = document.getElementById('np_desc')?.value.trim();
   if (nsnEditMode === 'new') {
-    nsnBook.push({ id: nextNsnId++, name, nsn, desc }); saveNsnToCloud();
+    nsnBook.push({ id: nextNsnId++, name, nsn, desc });
+      try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); console.log('NSN saved:', nsnBook.length); } catch(e) { console.error('NSN save error:', e); }
+  saveNsnToCloud();
   } else {
     const id = parseInt(document.getElementById('nsnBookSelect')?.value);
     const entry = nsnBook.find(n => n.id === id);
-    if (entry) { Object.assign(entry, { name, nsn, desc }); saveNsnToCloud(); }
+    if (entry) { Object.assign(entry, { name, nsn, desc });
+      try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); console.log('NSN saved:', nsnBook.length); } catch(e) { console.error('NSN save error:', e); }
+  saveNsnToCloud(); }
   }
   rebuildNsnSelect();
   closeEditPanel('nsn');
@@ -946,7 +955,9 @@ function saveNsnEntry() {
 function deleteSelectedNsn() {
   const id = parseInt(document.getElementById('nsnBookSelect')?.value);
   if (!id) { showToast('請先選擇一筆 NSN', '#E67E22'); return; }
-  nsnBook = nsnBook.filter(n => n.id !== id); saveNsnToCloud();
+  nsnBook = nsnBook.filter(n => n.id !== id);
+    try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); console.log('NSN saved:', nsnBook.length); } catch(e) { console.error('NSN save error:', e); }
+  saveNsnToCloud();
   rebuildNsnSelect();
 }
 
