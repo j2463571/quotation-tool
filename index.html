@@ -1269,23 +1269,30 @@ function renderRecords() {
   });
 
   // Group by quotNum (root key)
+  // Build a set of known quotNums that actually have a Quotation record
+  const knownQuotNums = new Set(
+    recs.filter(r => (r.docMode||'quotation') === 'quotation' && r.quotNum).map(r => r.quotNum)
+  );
+
   const groups = {};
   recs.forEach(r => {
-    // Group key: use quotNum if exists, otherwise use piNum or invNum or unique id
-    // This ensures unrelated PI/INV records don't get merged with old quotations
     let key;
     const dm = r.docMode || 'quotation';
     if (dm === 'quotation') {
       key = r.quotNum ? ('Q_' + r.quotNum) : ('_' + r.id);
     } else if (dm === 'pi') {
-      // Link to quotation if quotNum is set AND matches an existing quotation
-      key = r.quotNum ? ('Q_' + r.quotNum) : (r.piNum ? ('PI_' + r.piNum) : ('_' + r.id));
+      // Only link to Q if that Q actually exists
+      key = (r.quotNum && knownQuotNums.has(r.quotNum))
+        ? ('Q_' + r.quotNum)
+        : (r.piNum ? ('PI_' + r.piNum) : ('_' + r.id));
     } else if (dm === 'invoice') {
-      // Link by quotNum or refPI
-      key = r.quotNum ? ('Q_' + r.quotNum) : (r.invRefPi ? ('PI_' + r.invRefPi) : (r.invNum ? ('INV_' + r.invNum) : ('_' + r.id)));
+      key = (r.quotNum && knownQuotNums.has(r.quotNum))
+        ? ('Q_' + r.quotNum)
+        : (r.invRefPi ? ('PI_' + r.invRefPi) : (r.invNum ? ('INV_' + r.invNum) : ('_' + r.id)));
     } else if (dm === 'ps') {
-      // Link PS to inv by psInvNum, or quotNum
-      key = r.quotNum ? ('Q_' + r.quotNum) : (r.psInvNum ? ('INV_' + r.psInvNum) : ('_' + r.id));
+      key = (r.quotNum && knownQuotNums.has(r.quotNum))
+        ? ('Q_' + r.quotNum)
+        : (r.psInvNum ? ('INV_' + r.psInvNum) : ('_' + r.id));
     } else {
       key = '_' + r.id;
     }
@@ -1469,6 +1476,9 @@ function saveRecord() {
 }
 function loadRecordIntoForm(rec) {
   const s = (id,val) => { const e=document.getElementById(id); if(e) e.value=val||''; };
+  const clear = id => { const e=document.getElementById(id); if(e) e.value=''; };
+  const targetMode = docMode; // current mode we're loading INTO
+
   s('sellerName',rec.seller); s('buyerName',rec.buyer); s('buyerAddr',rec.buyerAddr);
   s('buyerAttn',rec.buyerAttn||''); s('buyerPhone',rec.buyerPhone); s('buyerEmail',rec.buyerEmail);
   // INCO
@@ -1486,13 +1496,24 @@ function loadRecordIntoForm(rec) {
   const cvals = ['EUR','USD','TWD','CNY','GBP'];
   if(cvals.includes(rec.currency)){ csel.value=rec.currency; document.getElementById('currencyCustom').style.display='none'; }
   else{ csel.value='__custom__'; document.getElementById('currencyCustom').style.display=''; s('currencyCustom',rec.currency); }
-  // Quot / PI / Inv numbers
+  // Quot / PI / Inv numbers — only load what's relevant to target mode
+  // Always load quotNum (used for grouping)
   s('quotNum',rec.quotNum); s('quotDate',rec.quotDate);
   s('piNum',rec.piNum); s('piDate',rec.piDate); s('poNum',rec.poNum);
+
+  // If extending to a new docMode (not the same as the record's mode), clear the target mode's own number
+  if (targetMode !== rec.docMode) {
+    if (targetMode === 'pi')      { clear('piNum'); clear('piDate'); }
+    if (targetMode === 'invoice') { clear('invNum'); clear('invDate'); clear('invPoNum'); }
+    if (targetMode === 'quotation') { clear('quotNum'); clear('quotDate'); }
+  }
+
   if(rec.invNum){
     const suffs=['-5','-4','-3','-2','-1']; let base=rec.invNum,suf='';
     for(const ss of suffs){ if(rec.invNum.endsWith(ss)){ base=rec.invNum.slice(0,-ss.length); suf=ss; break; } }
     s('invNum',base); const isuf=document.getElementById('invSuffix'); if(isuf) isuf.value=suf;
+  } else {
+    clear('invNum'); const isuf=document.getElementById('invSuffix'); if(isuf) isuf.value='';
   }
   s('invDate',rec.invDate); s('invPoNum',rec.invPoNum||rec.poNum||''); s('invRefPi',rec.invRefPi||rec.piNum||'');
   s('invDepositAmt',rec.invDepositAmt); s('invDepositPct',rec.invDepositPct);
