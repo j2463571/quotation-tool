@@ -1351,21 +1351,21 @@ function renderRecords() {
     if (r.id > groups[key].latestId) groups[key].latestId = r.id;
   });
 
-  // Sort groups by latest record id
-  let groupArr = Object.values(groups);
+  // Sort groups by document date (newest first)
+  const getGroupDate = g => {
+    const r = g.recs.reduce((a,b) => b.id > a.id ? b : a);
+    return r.invDate || r.piDate || r.quotDate || '';
+  };
   groupArr.sort((a,b) => {
-    if(sort==='date_desc') return b.latestId - a.latestId;
-    if(sort==='date_asc')  return a.latestId - b.latestId;
-    if(sort==='buyer_asc') {
-      const ab = a.recs[0]?.buyer||'', bb = b.recs[0]?.buyer||'';
-      return ab.localeCompare(bb);
-    }
+    if(sort==='date_desc') return getGroupDate(b).localeCompare(getGroupDate(a));
+    if(sort==='date_asc')  return getGroupDate(a).localeCompare(getGroupDate(b));
+    if(sort==='buyer_asc') return (a.recs[0]?.buyer||'').localeCompare(b.recs[0]?.buyer||'');
     if(sort==='total_desc') {
       const at = Math.max(...a.recs.map(r=>r.total||0));
       const bt = Math.max(...b.recs.map(r=>r.total||0));
       return bt - at;
     }
-    return b.latestId - a.latestId;
+    return getGroupDate(b).localeCompare(getGroupDate(a));
   });
 
   const cnt = document.getElementById('recCount');
@@ -1389,7 +1389,7 @@ function renderRecords() {
     const psRec   = psRecs[0] || null;
     // Use Q as primary for display, fallback to earliest
     const primary = qRec || piRec || invRec || psRec || allRecs[0];
-    const dd = primary.quotDate || primary.piDate || primary.invDate || '';
+    const dd = primary.invDate || primary.piDate || primary.quotDate || '';
     const itags = (primary.items||[]).map(it=>`<span class="rec-tag">${escHtml(it.item)}</span>`).join('');
     const latestRec = allRecs.reduce((a,b) => b.id > a.id ? b : a);
     const latestTotal = latestRec.total || 0;
