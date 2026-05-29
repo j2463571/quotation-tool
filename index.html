@@ -734,28 +734,33 @@ function loadNsnFromLocal() {
   } catch(e) {}
 }
 function saveNsnToLocal() {
-  try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); } catch(e) {}
+  try {
+    localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook));
+    console.log('NSN saved to localStorage:', nsnBook.length, 'entries');
+  } catch(e) { console.error('NSN localStorage save failed:', e); }
 }
 async function loadNsnBook() {
+  // Always load localStorage first (instant)
+  loadNsnFromLocal();
+  // Then try to update from cloud
   try {
-    // Try cloud first
     const data = await gasCall('getNsnBook');
     if (data && data.length > 0) {
       nsnBook = data.map(n => ({...n, id: Number(n.id)}));
       nextNsnId = Math.max(...nsnBook.map(n=>n.id), 0) + 1;
-      saveNsnToLocal(); // cache locally
-      return;
+      saveNsnToLocal(); // update local cache
+      rebuildNsnSelect();
     }
-  } catch(e) { /* cloud unavailable */ }
-  // Fallback to localStorage
-  loadNsnFromLocal();
+  } catch(e) { /* use localStorage */ }
 }
 async function saveNsnToCloud() {
-  saveNsnToLocal(); // always save locally immediately
+  // Save to localStorage SYNCHRONOUSLY first (guaranteed)
+  saveNsnToLocal();
+  // Then sync to cloud in background
   try {
     await gasCall('saveNsnBook', {nsnBook});
   } catch(e) {
-    // Silent fallback - localStorage already saved above
+    // localStorage already saved, no toast needed
   }
 }
 let nsnEditMode = 'new';
