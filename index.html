@@ -755,7 +755,7 @@ async function saveNsnToCloud() {
   try {
     await gasCall('saveNsnBook', {nsnBook});
   } catch(e) {
-    if (e.message !== 'local-file') showToast('⚠ NSN 雲端同步失敗', '#E67E22');
+    // Silent fallback - localStorage already saved above
   }
 }
 let nsnEditMode = 'new';
