@@ -723,6 +723,41 @@ async function testConnection() {
 // ══════════════════════════════════════════
 let nsnBook = [];
 let nextNsnId = 1;
+
+function loadNsnFromLocal() {
+  try {
+    const saved = localStorage.getItem('cs_nsnBook');
+    if (saved) {
+      nsnBook = JSON.parse(saved);
+      nextNsnId = nsnBook.length ? Math.max(...nsnBook.map(n=>n.id)) + 1 : 1;
+    }
+  } catch(e) {}
+}
+function saveNsnToLocal() {
+  try { localStorage.setItem('cs_nsnBook', JSON.stringify(nsnBook)); } catch(e) {}
+}
+async function loadNsnBook() {
+  try {
+    // Try cloud first
+    const data = await gasCall('getNsnBook');
+    if (data && data.length > 0) {
+      nsnBook = data.map(n => ({...n, id: Number(n.id)}));
+      nextNsnId = Math.max(...nsnBook.map(n=>n.id), 0) + 1;
+      saveNsnToLocal(); // cache locally
+      return;
+    }
+  } catch(e) { /* cloud unavailable */ }
+  // Fallback to localStorage
+  loadNsnFromLocal();
+}
+async function saveNsnToCloud() {
+  saveNsnToLocal(); // always save locally immediately
+  try {
+    await gasCall('saveNsnBook', {nsnBook});
+  } catch(e) {
+    if (e.message !== 'local-file') showToast('⚠ NSN 雲端同步失敗', '#E67E22');
+  }
+}
 let nsnEditMode = 'new';
 
 function rebuildNsnSelect() {
@@ -766,7 +801,7 @@ function saveNsnFromItem(itemIdx) {
   const nsn  = document.getElementById('npp_'+itemIdx)?.value.trim();
   if (!name || !nsn) { showToast('請填寫名稱與 NSN Number','#E74C3C'); return; }
   const desc = document.getElementById('npd_'+itemIdx)?.value.trim();
-  nsnBook.push({ id: nextNsnId++, name, nsn, desc });
+  nsnBook.push({ id: nextNsnId++, name, nsn, desc }); saveNsnToCloud();
   rebuildNsnSelect();
   // Also apply this NSN to the item immediately
   items[itemIdx].desc = nsn + (desc ? ' — ' + desc : '');
@@ -796,7 +831,7 @@ function applyNsnEntry(itemIdx, nsnId) {
 }
 
 function deleteNsnEntry(nsnId, itemIdx) {
-  nsnBook = nsnBook.filter(n => n.id !== nsnId);
+  nsnBook = nsnBook.filter(n => n.id !== nsnId); saveNsnToCloud();
   rebuildNsnSelect();
   renderNsnManageList(itemIdx);
   render();
@@ -892,11 +927,11 @@ function saveNsnEntry() {
   if (!name || !nsn) { showToast('請填寫名稱與 NSN Number', '#E74C3C'); return; }
   const desc = document.getElementById('np_desc')?.value.trim();
   if (nsnEditMode === 'new') {
-    nsnBook.push({ id: nextNsnId++, name, nsn, desc });
+    nsnBook.push({ id: nextNsnId++, name, nsn, desc }); saveNsnToCloud();
   } else {
     const id = parseInt(document.getElementById('nsnBookSelect')?.value);
     const entry = nsnBook.find(n => n.id === id);
-    if (entry) Object.assign(entry, { name, nsn, desc });
+    if (entry) { Object.assign(entry, { name, nsn, desc }); saveNsnToCloud(); }
   }
   rebuildNsnSelect();
   closeEditPanel('nsn');
@@ -906,7 +941,7 @@ function saveNsnEntry() {
 function deleteSelectedNsn() {
   const id = parseInt(document.getElementById('nsnBookSelect')?.value);
   if (!id) { showToast('請先選擇一筆 NSN', '#E67E22'); return; }
-  nsnBook = nsnBook.filter(n => n.id !== id);
+  nsnBook = nsnBook.filter(n => n.id !== id); saveNsnToCloud();
   rebuildNsnSelect();
 }
 
@@ -1281,18 +1316,17 @@ function renderRecords() {
     if (dm === 'quotation') {
       key = r.quotNum ? ('Q_' + r.quotNum) : ('_' + r.id);
     } else if (dm === 'pi') {
-      // Only link to Q if that Q actually exists
       key = (r.quotNum && knownQuotNums.has(r.quotNum))
         ? ('Q_' + r.quotNum)
         : (r.piNum ? ('PI_' + r.piNum) : ('_' + r.id));
     } else if (dm === 'invoice') {
       key = (r.quotNum && knownQuotNums.has(r.quotNum))
         ? ('Q_' + r.quotNum)
-        : (r.invRefPi ? ('PI_' + r.invRefPi) : (r.invNum ? ('INV_' + r.invNum) : ('_' + r.id)));
+        : (r.invNum ? ('INV_' + r.invNum) : ('_' + r.id));
     } else if (dm === 'ps') {
       key = (r.quotNum && knownQuotNums.has(r.quotNum))
         ? ('Q_' + r.quotNum)
-        : (r.psInvNum ? ('INV_' + r.psInvNum) : ('_' + r.id));
+        : (r.psInvNum ? ('INV_' + r.psInvNum) : ('PL_' + r.id));
     } else {
       key = '_' + r.id;
     }
