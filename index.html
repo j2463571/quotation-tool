@@ -2646,7 +2646,7 @@ renderBatches(); render();
 if (window.location.protocol === 'file:') {
   setSyncStatus('offline');
 } else {
-  Promise.all([loadContactsFromCloud(), loadBanksFromCloud()])
+  Promise.all([loadContactsFromCloud(), loadBanksFromCloud(), loadNsnBook()])
     .then(() => showToast('✓ 已連線至雲端', '#1A5276'))
     .catch(() => setSyncStatus('offline')); // silent — no error toast
 }
