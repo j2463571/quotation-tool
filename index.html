@@ -1687,7 +1687,10 @@ function buildRemarks() {
       const dstr = bmode==='days'
         ? `${b.days||'?'} days after receiving payment`
         : (b.date?fmtDate(b.date):'TBD');
-      lines.push(`${lines.length+1}. Delivery time: ${ord} batch${b.desc?' ('+b.desc+')':''} - ${dstr}`);
+      if(i===0) {
+        lines.push(`${lines.length+1}. Delivery time:`);
+      }
+      lines.push(`   ${ord} batch${b.desc?' ('+b.desc+')':''} - ${dstr}`);
     });
   } else {
     const mode=v('deliveryMode');
