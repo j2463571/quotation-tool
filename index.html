@@ -373,14 +373,14 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
       <!-- Quotation fields -->
       <div id="quotFields">
         <div class="form-row">
-          <div class="form-group"><label>報價單號 Quot. #</label><input type="text" id="quotNum" value="2026050701" oninput="render()"></div>
+          <div class="form-group"><label>報價單號 Quot. #</label><div style="display:flex;gap:4px"><input type="text" id="quotNum" value="2026050701" oninput="render()" style="flex:1"><button type="button" onclick="autoGenNum('quotation')" title="自動產生編號" style="background:var(--accent);color:#fff;border:none;border-radius:var(--rs);padding:0 8px;cursor:pointer;font-size:13px;flex-shrink:0">✦</button></div></div>
           <div class="form-group"><label>日期</label><input type="date" id="quotDate" value="2026-05-07" oninput="render()"></div>
         </div>
       </div>
       <!-- PI fields -->
       <div id="piFields" style="display:none">
         <div class="form-row">
-          <div class="form-group"><label>PI Number</label><input type="text" id="piNum" placeholder="PI-2026-001" oninput="render()"></div>
+          <div class="form-group"><label>PI Number</label><div style="display:flex;gap:4px"><input type="text" id="piNum" placeholder="PI-2026-001" oninput="render()" style="flex:1"><button type="button" onclick="autoGenNum('pi')" title="自動產生編號" style="background:var(--accent);color:#fff;border:none;border-radius:var(--rs);padding:0 8px;cursor:pointer;font-size:13px;flex-shrink:0">✦</button></div></div>
           <div class="form-group"><label>PI 日期</label><input type="date" id="piDate" oninput="render()"></div>
         </div>
         <div class="form-row">
@@ -393,7 +393,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
         <div class="form-row">
           <div class="form-group"><label>Invoice Number</label>
             <div style="display:flex;gap:4px">
-              <input type="text" id="invNum" placeholder="INV-2026-001" oninput="render()" style="flex:1">
+              <input type="text" id="invNum" placeholder="INV-2026-001" oninput="render()" style="flex:1"><button type="button" onclick="autoGenNum('invoice')" title="自動產生編號" style="background:var(--accent);color:#fff;border:none;border-radius:var(--rs);padding:0 8px;cursor:pointer;font-size:13px;flex-shrink:0">✦</button>
               <select id="invSuffix" onchange="render()" style="width:68px;padding:6px 4px">
                 <option value="">—</option><option value="-1">-1</option><option value="-2">-2</option>
                 <option value="-3">-3</option><option value="-4">-4</option><option value="-5">-5</option>
@@ -1264,17 +1264,31 @@ function updateItem(i,field,val) {
 //  BATCHES
 // ══════════════════════════════════════════
 let batches = [];
-function addBatch() { batches.push({desc:'',date:''}); renderBatches(); }
+function addBatch() { batches.push({desc:'',date:'',mode:'date',days:''}); renderBatches(); }
 function removeBatch(i) { batches.splice(i,1); renderBatches(); render(); }
-function updateBatch(i,field,val) { batches[i][field]=val; renderPreview(); }
+function updateBatch(i,field,val) { batches[i][field]=val; if(field==='mode') renderBatches(); renderPreview(); }
 function renderBatches() {
   const c = document.getElementById('batchContainer'); if(!c) return;
   c.innerHTML='';
   batches.forEach((b,i) => {
     const d = document.createElement('div'); d.className='batch-item';
-    d.innerHTML=`<input type="text" value="${escHtml(b.desc)}" placeholder="1st batch (說明)" oninput="updateBatch(${i},'desc',this.value)">
-      <input type="date" value="${b.date}" oninput="updateBatch(${i},'date',this.value)">
-      <button class="btn-remove" onclick="removeBatch(${i})">×</button>`;
+    const mode = b.mode||'date';
+    d.style.cssText='display:flex;flex-direction:column;gap:5px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--rs);background:var(--input-bg);margin-bottom:6px';
+    d.innerHTML=`
+      <div style="display:flex;gap:5px;align-items:center">
+        <input type="text" value="${escHtml(b.desc)}" placeholder="批次說明 e.g. 1st batch" oninput="updateBatch(${i},'desc',this.value)" style="flex:1">
+        <button class="btn-remove" onclick="removeBatch(${i})">&#215;</button>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        <select oninput="updateBatch(${i},'mode',this.value)" onchange="updateBatch(${i},'mode',this.value)" style="flex:1">
+          <option value="date" ${mode==='date'?'selected':''}>指定日期</option>
+          <option value="days" ${mode==='days'?'selected':''}>收款後天數</option>
+        </select>
+        ${mode==='date'
+          ? `<input type="date" value="${b.date||''}" oninput="updateBatch(${i},'date',this.value)" style="flex:1">`
+          : `<input type="number" value="${b.days||''}" placeholder="天數" min="1" oninput="updateBatch(${i},'days',this.value)" style="flex:1"><span style="font-size:11px;color:var(--text-muted);white-space:nowrap;align-self:center;padding:0 4px">天</span>`
+        }
+      </div>`;
     c.appendChild(d);
   });
 }
@@ -1669,7 +1683,10 @@ function buildRemarks() {
   if(batches.length>0) {
     batches.forEach((b,i)=>{
       const ord=ORDINALS[i]||`${i+1}th`;
-      const dstr=b.date?fmtDate(b.date):'TBD';
+      const bmode = b.mode||'date';
+      const dstr = bmode==='days'
+        ? `${b.days||'?'} days after receiving payment`
+        : (b.date?fmtDate(b.date):'TBD');
       lines.push(`${lines.length+1}. Delivery time: ${ord} batch${b.desc?' ('+b.desc+')':''} - ${dstr}`);
     });
   } else {
@@ -1681,8 +1698,9 @@ function buildRemarks() {
     const skip=document.getElementById('validDateSkip')?.checked;
     if(!skip){ const vd=v('validDate'); if(vd) lines.push(`${lines.length+1}. The quote is valid until ${fmtDate(vd)}.`); }
   }
-  const other=v('otherRemarks').split('\n').filter(l=>l.trim());
-  other.forEach(l=>lines.push(`${lines.length+1}. ${l.trim()}`));
+  // otherRemarks: no auto numbering, output as-is
+  const other=v('otherRemarks').split('\n');
+  other.forEach(l=>lines.push(l));
   return lines;
 }
 
@@ -1704,7 +1722,7 @@ function renderPreview() {
   const taxRate       = parseFloat(v('taxRate'))||0;
   const taxRowHTML    = taxRate>0?`<tr><td>Tax (${taxRate}%)</td><td>${cur}${fmtMoney(tax)}</td></tr>`:'';
   const remarkLines   = buildRemarks();
-  const remarksHTML   = remarkLines.map(l=>`<div>${escHtml(l)}</div>`).join('');
+  const remarksHTML   = remarkLines.map(l=>l===''?'<div>&nbsp;</div>':`<div style="white-space:pre-wrap">${escHtml(l)}</div>`).join('');
   const buyerAttnVal = v('buyerAttn');
   const buyerBlock    = [v('buyerName'), buyerAttnVal?`Attn: ${buyerAttnVal}`:null, v('buyerAddr'),v('buyerPhone'),v('buyerEmail')].filter(Boolean).map(escHtml).join('<br>');
   const hasDesc = items.some(it=>it.descType==='desc'||it.descType==='both');
@@ -2633,6 +2651,44 @@ function exportPackingSlipPDF() {
   win.document.write('<img src=x onerror="setTimeout(function(){window.print();window.onafterprint=function(){window.close()}},600)" style="display:none">');
   win.document.write('</body></html>');
   win.document.close();
+}
+
+
+// ══════════════════════════════════════════
+//  AUTO NUMBER GENERATION
+// ══════════════════════════════════════════
+function dateToPrefix(dateStr) {
+  if (!dateStr) return '';
+  return dateStr.replace(/-/g, '').slice(0,8); // YYYYMMDD
+}
+async function autoGenNum(mode) {
+  const dateId = mode==='pi' ? 'piDate' : mode==='invoice' ? 'invDate' : 'quotDate';
+  const numId  = mode==='pi' ? 'piNum'  : mode==='invoice' ? 'invNum'  : 'quotNum';
+  const dateVal = v(dateId);
+  if (!dateVal) { showToast('請先填寫日期','#E67E22'); return; }
+  const prefix = dateToPrefix(dateVal);
+  // Count existing records with same prefix to determine sequence
+  let seq = 1;
+  try {
+    const recs = await gasCall('getRecords');
+    const same = (recs||[]).filter(r => {
+      const dm = r.docMode||'quotation';
+      const num = dm==='pi' ? (r.piNum||'') : dm==='invoice' ? (r.invNum||'') : (r.quotNum||'');
+      return num.startsWith(prefix);
+    });
+    seq = same.length + 1;
+  } catch(e) {
+    // offline: check local quoteRecords
+    const same = quoteRecords.filter(r => {
+      const dm = r.docMode||'quotation';
+      const num = dm==='pi' ? (r.piNum||'') : dm==='invoice' ? (r.invNum||'') : (r.quotNum||'');
+      return num.startsWith(prefix);
+    });
+    seq = same.length + 1;
+  }
+  const newNum = prefix + String(seq).padStart(2,'0');
+  const el = document.getElementById(numId);
+  if (el) { el.value = newNum; render(); }
 }
 
 // ══════════════════════════════════════════
