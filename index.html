@@ -147,15 +147,19 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
 .pv-info-table td:last-child{text-align:right;width:136px}
 .pv-items-table{width:100%;border-collapse:collapse;font-size:11.5px;font-family:'Times New Roman',Times,serif}
 .pv-items-table th{background:#f0f0f0;border:1px solid #999;padding:7px 9px;text-align:center;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#333}
-.pv-items-table td{border:1px solid #ccc;padding:7px 9px;vertical-align:top}
+.pv-items-table td{border:1px solid #999;padding:7px 9px;vertical-align:top}
 .pv-items-table td.c{text-align:center}
 .pv-items-table td.r{text-align:right}
 .pv-items-table tr:nth-child(even) td{background:#FAFAFA}
-.pv-bottom{display:grid;grid-template-columns:1fr auto}
-.pv-remark{border:1px solid #999;border-top:none;border-right:none;padding:9px 11px;font-size:12.5px;color:#333;line-height:1.75;min-height:76px;font-family:'Times New Roman',Times,serif}
+.pv-bottom{display:grid;grid-template-columns:1fr auto;margin-top:-1px}
+.pv-remark{border:1px solid #999;border-right:none;padding:9px 11px;font-size:12.5px;color:#333;line-height:1.75;min-height:76px;font-family:'Times New Roman',Times,serif}
 .pv-remark-label{font-weight:700;font-size:13.0px;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:3px}
 .pv-totals-table{border-collapse:collapse;font-size:10.5px;font-family:'Times New Roman',Times,serif;width:176px;table-layout:fixed}
 .pv-totals-table td{border:1px solid #999;padding:7px 9px}
+.pv-totals-table td:first-child{background:#f0f0f0;font-weight:700;color:#444;text-transform:uppercase;font-size:9.5px;letter-spacing:.04em;width:88px;overflow:hidden}
+.pv-totals-table td:last-child{text-align:right;font-weight:600;width:88px;overflow:hidden}
+.pv-totals-table .grand-row td{font-size:10.5px;font-weight:700;color:#1A5276;background:#EBF5FB}
+.pv-totals-table .grand-row td:first-child{background:#D6EAF8}
 .pv-totals-table td:first-child{background:#f0f0f0;font-weight:700;color:#444;text-transform:uppercase;font-size:9.5px;letter-spacing:.04em;width:88px;overflow:hidden}
 .pv-totals-table td:last-child{text-align:right;font-weight:600;width:88px;overflow:hidden}
 .pv-totals-table .grand-row td{font-size:10.5px;font-weight:700;color:#1A5276;background:#EBF5FB}
@@ -1670,6 +1674,29 @@ function buildDepositRows(cur,total) {
   else if(t==='pct') dep=total*(parseFloat(document.getElementById('invDepositPct')?.value)||0)/100;
   if(dep<=0) return '';
   return `<tr><td>Total Amount</td><td>${cur}${fmtMoney(total)}</td></tr><tr><td>Deposit Paid</td><td>- ${cur}${fmtMoney(dep)}</td></tr>`;
+}
+function buildDepositRowsInline(cur,total) {
+  const t = document.getElementById('invDepositType')?.value||'none'; if(t==='none') return '';
+  let dep=0;
+  if(t==='amount') dep=parseFloat(document.getElementById('invDepositAmt')?.value)||0;
+  else if(t==='pct') dep=total*(parseFloat(document.getElementById('invDepositPct')?.value)||0)/100;
+  if(dep<=0) return '';
+  const cell = (label,val,bg='#f0f0f0',color='#444') =>
+    `<td colspan="2" style="background:${bg};font-weight:700;color:${color};text-transform:uppercase;font-size:9.5px;letter-spacing:.04em;text-align:left;padding:7px 9px">${label}</td><td style="text-align:right;font-weight:600;padding:7px 9px">${val}</td>`;
+  return `<tr>${cell('Total Amount',cur+fmtMoney(total))}</tr><tr>${cell('Deposit Paid','- '+cur+fmtMoney(dep))}</tr>`;
+}
+function countTotalRows(tax,total) {
+  // subtotal + grand = 2; +1 if tax; +2 if deposit
+  let n=2;
+  if(tax>0) n++;
+  const t=document.getElementById('invDepositType')?.value||'none';
+  if(t!=='none'){
+    let dep=0;
+    if(t==='amount') dep=parseFloat(document.getElementById('invDepositAmt')?.value)||0;
+    else if(t==='pct') dep=total*(parseFloat(document.getElementById('invDepositPct')?.value)||0)/100;
+    if(dep>0) n+=2;
+  }
+  return n;
 }
 function buildFinalTotal(total) {
   if(docMode!=='invoice') return total;
