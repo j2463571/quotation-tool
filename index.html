@@ -1678,28 +1678,30 @@ function buildFinalTotal(total) {
 }
 const ORDINALS=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
 function buildRemarks() {
-  const lines=[]; const origin=v('remarkOrigin');
-  if(origin) lines.push(`${lines.length+1}. Country of Origin - ${origin}`);
+  const lines=[]; let num=0;
+  const addN = t => { num++; lines.push(`${num}. ${t}`); };
+  const addI = t => lines.push(`   ${t}`); // indented, no number
+
+  const origin=v('remarkOrigin');
+  if(origin) addN(`Country of Origin - ${origin}`);
   if(batches.length>0) {
+    addN('Delivery time:');
     batches.forEach((b,i)=>{
       const ord=ORDINALS[i]||`${i+1}th`;
       const bmode = b.mode||'date';
       const dstr = bmode==='days'
         ? `${b.days||'?'} days after receiving payment`
         : (b.date?fmtDate(b.date):'TBD');
-      if(i===0) {
-        lines.push(`${lines.length+1}. Delivery time:`);
-      }
-      lines.push(`   ${ord} batch${b.desc?' ('+b.desc+')':''} - ${dstr}`);
+      addI(`${ord} batch${b.desc?' ('+b.desc+')':''} - ${dstr}`);
     });
   } else {
     const mode=v('deliveryMode');
-    if(mode==='date'){ const d=v('deliveryDate'); if(d) lines.push(`${lines.length+1}. Delivery time: ${fmtDate(d)}`); }
-    else if(mode==='days'){ const days=v('deliveryDays')||'30'; lines.push(`${lines.length+1}. Delivery time: ${days} days after receiving the down payment.`); }
+    if(mode==='date'){ const d=v('deliveryDate'); if(d) addN(`Delivery time: ${fmtDate(d)}`); }
+    else if(mode==='days'){ const days=v('deliveryDays')||'30'; addN(`Delivery time: ${days} days after receiving the down payment.`); }
   }
   if(docMode==='quotation'){
     const skip=document.getElementById('validDateSkip')?.checked;
-    if(!skip){ const vd=v('validDate'); if(vd) lines.push(`${lines.length+1}. The quote is valid until ${fmtDate(vd)}.`); }
+    if(!skip){ const vd=v('validDate'); if(vd) addN(`The quote is valid until ${fmtDate(vd)}.`); }
   }
   // otherRemarks: no auto numbering, output as-is
   const other=v('otherRemarks').split('\n');
@@ -2019,7 +2021,7 @@ function exportRecordsPDF() {
   }).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-  <sty'+'le>
+  <sty`+`le>
     body{font-family:'Times New Roman',serif;font-size:11px;margin:20px}
     h2{font-size:14px;margin-bottom:4px}
     .sub{font-size:10px;color:#666;margin-bottom:12px}
@@ -2028,100 +2030,7 @@ function exportRecordsPDF() {
     td{border-bottom:1px solid #ddd;padding:6px 8px;vertical-align:top}
     tr:nth-child(even) td{background:#f5f5f5}
     .total{font-weight:700;text-align:right;padding:8px;font-size:11px}
-  
-/* ══════════════════════════════════════════
-   MOBILE RESPONSIVE  (<= 768px)
-══════════════════════════════════════════ */
-@media (max-width: 768px) {
-  /* Header */
-  header { height:auto; padding:8px 12px; flex-wrap:wrap; gap:6px; }
-  header h1 { font-size:13px; }
-  header h1 span { display:none; }
-  .mode-toggle { margin-left:0; }
-  .mode-btn { padding:3px 10px; font-size:11px; }
-  .header-btns { gap:4px; flex-wrap:wrap; }
-  .btn-hdr { padding:5px 10px; font-size:11px; }
-
-  /* Workspace: stack vertically, tabs for form/preview */
-  .workspace { flex-direction: column; overflow: visible; }
-  .resizer { display: none; }
-  .form-panel {
-    width: 100% !important;
-    min-width: unset;
-    max-width: unset;
-    flex-shrink: unset;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: 1rem;
-  }
-  .preview-panel {
-    padding: 0.75rem;
-    flex: unset;
-    min-height: 60vh;
-  }
-
-  /* Mobile tab bar */
-  .mobile-tabs {
-    display: flex !important;
-    background: var(--panel);
-    border-bottom: 2px solid var(--border);
-    flex-shrink: 0;
-  }
-  .mobile-tab {
-    flex: 1;
-    padding: 10px 4px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    font-family: 'Noto Sans TC', sans-serif;
-    background: none;
-    border-left: none;
-    border-right: none;
-    border-top: none;
-  }
-  .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-  /* Preview A4 scale down */
-  .pv-paper {
-    width: 100% !important;
-    transform-origin: top left;
-    transform: scale(0.52);
-    margin-bottom: -48%;
-  }
-
-  /* Form layout */
-  .form-row { grid-template-columns: 1fr; }
-  .remark-date-row { grid-template-columns: 1fr 1fr; }
-
-  /* Modal */
-  .modal { width: 100vw; max-width: 100vw; max-height: 94vh; border-radius: 12px 12px 0 0; position: fixed; bottom: 0; top: auto; }
-  .modal-overlay { align-items: flex-end; }
-  .modal-toolbar { flex-wrap: wrap; gap: 6px; padding: 8px 12px; }
-  .modal-toolbar input[type="date"] { width: 130px; }
-
-  /* Items */
-  .item-card { padding: 8px 10px 6px; }
-}
-
-
-/* ── Inv# Dropdown ── */
-.inv-dropdown-wrap{position:relative;display:inline-block}
-.inv-dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:420px;max-height:420px;overflow-y:auto;z-index:500;font-family:'Noto Sans TC',sans-serif}
-.inv-dropdown-menu.open{display:block}
-.inv-dd-header{padding:8px 14px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border-light);background:var(--bg)}
-.inv-dd-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .1s;font-size:12px}
-.inv-dd-row:hover{background:var(--accent-light)}
-.inv-dd-num{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#1E8449;min-width:110px;flex-shrink:0}
-.inv-dd-buyer{font-weight:500;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.inv-dd-items{font-size:10.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
-.inv-dd-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:12px}
-/* Hide mobile tabs on desktop */
-.mobile-tabs { display: none; }
-</sty'+'le></head><body>
+  </sty`+`le></head><body>
   <h2>報價紀錄 Quote Records${dateRange}${searchNote}</h2>
   <div class="sub">匯出日期：${new Date().toLocaleDateString('zh-TW')} &nbsp;|&nbsp; 共 ${recs.length} 筆</div>
   <table>
