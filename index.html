@@ -298,6 +298,7 @@ textarea{resize:vertical;min-height:50px;line-height:1.5}
   </div>
   <div class="header-btns">
     <span class="sync-dot" id="syncDot" title="雲端狀態"></span>
+    <button class="btn-hdr" id="btnUndo" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.25);cursor:not-allowed" onclick="undoLast()" title="復原上一步" disabled>&#8617; 復原</button>
     <button class="btn-hdr" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.5)" onclick="newDocument()">&#43; 新檔案</button>
     <button class="btn-hdr btn-hdr-save" onclick="saveRecord()">&#128190; 儲存</button>
     <button class="btn-hdr btn-hdr-rec"  onclick="openRecords()">&#128203; 紀錄</button>
@@ -1253,7 +1254,7 @@ function toggleDescType(i, t) {
   render();
 }
 function addItem() { items.push({item:'',descType:'desc',desc:'',qty:1,price:0}); render(); }
-function removeItem(i) { items.splice(i,1); render(); }
+function removeItem(i) { captureState("刪除品項 "+(i+1)); items.splice(i,1); render(); }
 function updateItem(i,field,val) {
   if(field==='qty'||field==='price') items[i][field]=parseFloat(val)||0;
   else items[i][field]=val;
@@ -1265,7 +1266,7 @@ function updateItem(i,field,val) {
 // ══════════════════════════════════════════
 let batches = [];
 function addBatch() { batches.push({desc:'',date:'',mode:'date',days:''}); renderBatches(); }
-function removeBatch(i) { batches.splice(i,1); renderBatches(); render(); }
+function removeBatch(i) { captureState("刪除批次"); batches.splice(i,1); renderBatches(); render(); }
 function updateBatch(i,field,val) { batches[i][field]=val; if(field==='mode') renderBatches(); renderPreview(); }
 function renderBatches() {
   const c = document.getElementById('batchContainer'); if(!c) return;
@@ -1467,6 +1468,7 @@ function renderRecords() {
 }
 
 function deleteRecordGroup(ids) {
+  captureState("刪除整組紀錄");
   quoteRecords = quoteRecords.filter(r => !ids.includes(r.id));
   renderRecords();
   ids.forEach(id => gasCall('deleteRecord',{id}).catch(()=>{}));
@@ -1474,6 +1476,7 @@ function deleteRecordGroup(ids) {
 }
 function newDocument() {
   if (!confirm('清除所有內容，建立新檔案？')) return;
+  captureState('新檔案（清除前）');
   // Reset doc mode
   setDocMode('quotation');
   // Clear all form fields
@@ -2565,6 +2568,83 @@ function exportPackingSlipPDF() {
   win.document.close();
 }
 
+
+
+// ══════════════════════════════════════════
+//  UNDO STACK
+// ══════════════════════════════════════════
+const UNDO_MAX = 20;
+let undoStack = [];
+
+function captureState(label) {
+  // Capture all form field values
+  const fields = ['quotNum','quotDate','piNum','piDate','poNum','invNum','invDate','invPoNum',
+    'invRefPi','invSuffix','buyerName','buyerAttn','buyerAddr','buyerPhone','buyerEmail',
+    'incoTermSel','incoTermCustom','paymentSel','paymentCustom','currencySel','currencyCustom',
+    'incoLocation','taxRate','remarkOrigin','otherRemarks','validDate','deliveryDate',
+    'deliveryDays','deliveryMode','director','invDepositType','invDepositAmt','invDepositPct'];
+  const fieldVals = {};
+  fields.forEach(id => { const e=document.getElementById(id); if(e) fieldVals[id]=e.value; });
+  // Also capture checkboxes
+  ['validDateSkip','invDepositType'].forEach(id => {
+    const e=document.getElementById(id); if(e && e.type==='checkbox') fieldVals[id+'_chk']=e.checked;
+  });
+  undoStack.push({
+    label,
+    docMode,
+    items: JSON.parse(JSON.stringify(items)),
+    batches: JSON.parse(JSON.stringify(batches)),
+    quoteRecords: JSON.parse(JSON.stringify(quoteRecords)),
+    fieldVals,
+  });
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  updateUndoBtn();
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('btnUndo');
+  if (!btn) return;
+  if (undoStack.length > 0) {
+    const top = undoStack[undoStack.length-1];
+    btn.disabled = false;
+    btn.style.background = 'rgba(255,255,255,.15)';
+    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
+    btn.style.borderColor = 'rgba(255,255,255,.5)';
+    btn.title = `復原：${top.label}`;
+  } else {
+    btn.disabled = true;
+    btn.style.background = 'rgba(255,255,255,.08)';
+    btn.style.color = 'rgba(255,255,255,.5)';
+    btn.style.cursor = 'not-allowed';
+    btn.style.borderColor = 'rgba(255,255,255,.25)';
+    btn.title = '無可復原的操作';
+  }
+}
+
+function undoLast() {
+  if (!undoStack.length) return;
+  const state = undoStack.pop();
+  // Restore docMode
+  setDocMode(state.docMode);
+  // Restore form fields
+  Object.entries(state.fieldVals).forEach(([id, val]) => {
+    if (id.endsWith('_chk')) {
+      const e = document.getElementById(id.replace('_chk',''));
+      if (e && e.type==='checkbox') e.checked = val;
+    } else {
+      const e = document.getElementById(id); if(e) e.value = val;
+    }
+  });
+  // Restore items and batches
+  items = state.items;
+  batches = state.batches;
+  // Restore records
+  quoteRecords = state.quoteRecords;
+  renderBatches(); render();
+  updateUndoBtn();
+  showToast(`✓ 已復原：${state.label}`, '#7D3C98');
+}
 
 // ══════════════════════════════════════════
 //  AUTO NUMBER GENERATION
