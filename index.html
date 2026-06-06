@@ -1406,13 +1406,13 @@ function renderRecords() {
     const allRecs = g.recs;
     // Find Q, ALL PIs, ALL INVs within group
     const qRec    = allRecs.find(r => (r.docMode||'quotation')==='quotation');
+    const qRecs   = allRecs.filter(r => (r.docMode||'quotation')==='quotation');
     const piRecs  = allRecs.filter(r => r.docMode==='pi');
     const invRecs = allRecs.filter(r => r.docMode==='invoice');
     const psRecs  = allRecs.filter(r => r.docMode==='ps');
     const piRec   = piRecs[0] || null;
     const invRec  = invRecs[0] || null;
     const psRec   = psRecs[0] || null;
-    // Use Q as primary for display, fallback to earliest
     const primary = qRec || piRec || invRec || psRec || allRecs[0];
     const dd = primary.invDate || primary.piDate || primary.quotDate || '';
     const itags = (primary.items||[]).map(it=>`<span class="rec-tag">${escHtml(it.item)}</span>`).join('');
@@ -1433,9 +1433,12 @@ function renderRecords() {
     // Load buttons for existing docs + individual delete
     let actionBtns = '';
     // Q
-    if (qRec) {
-      const jsQ = JSON.stringify(qRec).replace(/"/g,'&quot;');
-      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');initMobileLayout();loadRecordIntoForm(${jsQ})">Q</button><button class="btn-rec-del" onclick="deleteRecord(${qRec.id})" title="刪除 Quotation" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    // All Qs
+    qRecs.forEach((r,i) => {
+      const js = JSON.stringify(r).replace(/"/g,'&quot;');
+      const label = qRecs.length > 1 ? `Q${i+1}` : 'Q';
+      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');initMobileLayout();loadRecordIntoForm(${js})">${label}</button><button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除 ${label}" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+    });
     }
     // All PIs
     piRecs.forEach((r,i) => {
