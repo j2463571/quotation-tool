@@ -1435,11 +1435,10 @@ function renderRecords() {
     // Q
     // All Qs
     qRecs.forEach((r,i) => {
-      const js = JSON.stringify(r).replace(/"/g,'&quot;');
-      const label = qRecs.length > 1 ? `Q${i+1}` : 'Q';
-      actionBtns += `<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button ${btnStyle('#1A5276')} onclick="setDocMode('quotation');initMobileLayout();loadRecordIntoForm(${js})">${label}</button><button class="btn-rec-del" onclick="deleteRecord(${r.id})" title="刪除 ${label}" style="font-size:11px;padding:2px 3px">🗑</button></span>`;
+      const jsQ2 = JSON.stringify(r).replace(/"/g,'&quot;');
+      const label = qRecs.length > 1 ? ('Q'+(i+1)) : 'Q';
+      actionBtns += '<span style="display:inline-flex;align-items:center;gap:1px;margin-right:2px"><button '+btnStyle('#1A5276')+' onclick="setDocMode(\'quotation\');initMobileLayout();loadRecordIntoForm('+jsQ2+')">'+label+'</button><button class="btn-rec-del" onclick="deleteRecord('+r.id+')" title="刪除 '+label+'" style="font-size:11px;padding:2px 3px">🗑</button></span>';
     });
-    }
     // All PIs
     piRecs.forEach((r,i) => {
       const js = JSON.stringify(r).replace(/"/g,'&quot;');
